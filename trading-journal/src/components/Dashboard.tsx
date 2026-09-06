@@ -6,6 +6,7 @@ import { csvCell, downloadFile } from '../lib/storage'
 import { Empty, FilterBar, StatCards } from './ui'
 import { money, number } from '../lib/format'
 import { DailyChart, EquityChart } from './Charts'
+import PerformanceCalendar from './PerformanceCalendar'
 function BreakdownTable({ trades, fields, currency, exportable = false }: { trades: Trade[]; fields: Field[]; currency: string; exportable?: boolean }) {
   const groups = groupTrades(trades, fields)
   const exportRows = () => {
@@ -29,6 +30,7 @@ export default function Dashboard({ data, onNew, onDemo }: { data: JournalData; 
     <div className="section-line"><div className="tabs-small"><span className="active">Overview</span><span>{trades.length} of {completed.length} completed trades</span></div><button className="secondary compact" onClick={() => setShowFilters(!showFilters)}><SlidersHorizontal size={15} />{showFilters ? 'Hide filters' : 'Show filters'}{filters.rules.length > 0 ? ` (${filters.rules.length})` : ''}</button></div>
     {showFilters && <FilterBar fields={data.fields} trades={completed} value={filters} onChange={setFilters} />}
     <StatCards trades={trades} currency={data.currency} />
+    <PerformanceCalendar trades={trades} currency={data.currency} focusMonth={(filters.to || filters.from).slice(0, 7) || undefined} />
     {stats.excluded > 0 && <div className="notice">{stats.excluded} completed trade(s) have no numeric PnL and are excluded from monetary statistics.</div>}
     {!completed.length ? <div className="panel"><Empty title="Your edge starts here." action={<div className="button-row"><button className="primary" onClick={onNew}>Log your first trade <ArrowUpRight size={16} /></button>{!totalDemo && <button className="secondary" onClick={onDemo}>Explore sample data</button>}</div>}>Complete a trade to see your equity curve, strategy performance, and automatic characteristic breakdowns.</Empty></div> : !trades.length ? <div className="panel"><Empty title="No trades match these filters." action={<button className="secondary" onClick={() => setFilters(emptyFilters())}>Clear filters</button>}>Try a wider date range or a different combination.</Empty></div> : <>
       <div className="chart-grid"><section className="panel"><div className="panel-heading"><div><h2>Equity curve</h2><p>Your cumulative performance, trade by trade</p></div><span className="legend"><i />Net PnL</span></div><EquityChart data={stats.curve} currency={data.currency} /></section><section className="panel"><div className="panel-heading"><div><h2>Daily performance</h2><p>Net PnL by trading day</p></div><span className="tag">{dailyResults(trades).length} days</span></div><DailyChart data={dailyResults(trades)} currency={data.currency} /><div className="chart-caption">Hover over a bar for the date and PnL</div></section></div>

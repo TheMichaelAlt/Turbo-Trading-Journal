@@ -1,4 +1,4 @@
-import { type Field, type Trade, isBlank, isNumeric } from './model.ts'
+import { type Field, type Trade, isBlank, isNumeric, canonicalText, characteristicValue } from './model.ts'
 export interface Filter { field: string; value?: string; min?: string; max?: string; missing?: boolean }
 export interface Filters { from: string; to: string; rules: Filter[] }
 export const emptyFilters = (): Filters => ({ from: '', to: '', rules: [] })
@@ -10,7 +10,7 @@ export function filterTrades(trades: Trade[], filters: Filters): Trade[] {
     return filters.rules.every(f => {
       const value = t.values[f.field]
       if (f.missing) return isBlank(value)
-      if (f.value !== undefined && f.value !== '' && String(value ?? '') !== f.value) return false
+      if (f.value !== undefined && f.value !== '' && (f.field === 'notes' ? String(value ?? '') !== f.value : canonicalText(value) !== canonicalText(f.value))) return false
       if (f.min !== undefined && f.min !== '' && (isBlank(value) || !Number.isFinite(Number(value)) || Number(value) < Number(f.min))) return false
       if (f.max !== undefined && f.max !== '' && (isBlank(value) || !Number.isFinite(Number(value)) || Number(value) > Number(f.max))) return false
       return true
@@ -60,7 +60,8 @@ export function groupTrades(trades: Trade[], fields: Field[]) {
   for (const trade of trades) {
     const sort: (string | number)[] = []
     const labels = fields.map(f => {
-      const v = trade.values[f.id]
+      const raw = trade.values[f.id]
+      const v = raw === undefined ? raw : characteristicValue(f, raw)
       if (isBlank(v)) { sort.push(Infinity); return 'Not recorded' }
       const bucket = numericGroups.get(f.id)
       if (bucket) {

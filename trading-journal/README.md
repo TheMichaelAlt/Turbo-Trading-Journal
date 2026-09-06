@@ -24,10 +24,11 @@ Open http://127.0.0.1:5173. Both commands use the same port, so run one at a tim
 1. Choose **Explore sample data** on the dashboard to add 64 explicitly marked sample trades and a Mood characteristic. Settings can remove only the sample trades later.
 2. On **Trade log**, enter any trade details and save. Missing required fields leave the trade in the unfinished queue. Finish it there to move it into the **Master trade log** and analytics.
 3. Edit or delete completed trades from the master log. You can search all active characteristics, filter records, choose visible columns, sort, paginate, and export the filtered result to CSV.
-4. In **Settings**, add text/dropdown, decimal, integer, percentage, score, date, or time characteristics. Configure numeric bounds, score ranges, suggested options, required status, filtering, and automatic analysis. Text entries remember new options. Custom characteristics can be archived and restored without losing their values.
+4. In **Settings**, add text/dropdown, decimal, integer, percentage, score, date, or time characteristics. Configure numeric bounds, score ranges, suggested options, required status, filtering, and automatic analysis. Text entries are uppercase and remember new options without case duplicates. Existing trades and backups follow the same rules, so `mnq`, `MNQ`, and `Mnq` share one analytics group. Notes and daily journal text keep their original case and spacing. Custom characteristics can be archived and restored without losing their values.
 5. Use **Dashboard** filters together to narrow by dates, strategy, contract, mood, or numeric ranges. The main breakdown defaults to **Strategy × Contract**. Every enabled characteristic gets its own expandable breakdown. Numeric fields with more than eight unique values use five equal-width ranges; missing values get a separate group.
 6. On **Daily journal**, choose a date and write. Edits save automatically; use the arrows, date picker, or saved pages to browse. There is no application-imposed text length limit.
-7. Switch between **Midnight drive** (dark) and **Miami morning** (light) using the sidebar or Settings.
+7. Browse the dashboard's **Trading calendar** by month to see each day's net PnL, completed trade count, win rate, and strategies used. It respects all dashboard filters. Select a trading day for full details. Trades without PnL count toward the trade total but are excluded from PnL and win rate.
+8. Switch between **Midnight drive** (dark) and **Race day** (light) using the sidebar or Settings. Both use teal and racing orange, with a turbocharger emblem.
 
 ## Defaults and completion
 
@@ -64,7 +65,7 @@ Save errors are shown explicitly with a retry button. The app guards against lea
 npm run build        # Type-check and build renderer + Electron main/preload
 npm run lint         # ESLint with no warnings permitted
 npm test             # Model, analytics, SQLite persistence and migration tests
-npm run test:e2e      # Seven browser workflow tests using installed Microsoft Edge
+npm run test:e2e      # Nine browser workflow tests using installed Microsoft Edge
 npm run test:desktop  # Build and verify Electron persistence across full restarts
 npm run dist         # Build an installable desktop package with electron-builder
 ```

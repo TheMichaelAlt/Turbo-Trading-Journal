@@ -12,7 +12,7 @@ const trusted = (event: IpcMainInvokeEvent) => {
   if (!win || event.sender !== win.webContents || event.senderFrame !== win.webContents.mainFrame) throw new Error('Untrusted request')
 }
 function createWindow() {
-  win = new BrowserWindow({ width: 1440, height: 960, minWidth: 780, minHeight: 600, title: 'Turbo Trading Journal', backgroundColor: '#0d0c12', autoHideMenuBar: true, show: !process.env.TURBO_TEST_DATA_DIR,
+  win = new BrowserWindow({ width: 1440, height: 960, minWidth: 780, minHeight: 600, title: 'Turbo Trading Journal', backgroundColor: '#0b1113', autoHideMenuBar: true, show: !process.env.TURBO_TEST_DATA_DIR,
     webPreferences: { preload: path.join(directory, 'preload.mjs'), contextIsolation: true, nodeIntegration: false, sandbox: true },
   })
   win.webContents.setWindowOpenHandler(() => ({ action: 'deny' }))

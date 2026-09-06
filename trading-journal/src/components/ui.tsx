@@ -1,6 +1,6 @@
 import { useEffect, useRef, type ReactNode } from 'react'
 import { X, ArrowUpRight, Minus, Activity } from 'lucide-react'
-import { type Field, type Trade, isNumeric } from '../lib/model'
+import { type Field, type Trade, isNumeric, characteristicValue } from '../lib/model'
 import { type Filters, emptyFilters, metrics } from '../lib/analytics'
 import { money, number } from '../lib/format'
 export function Modal({ title, children, onClose, wide = false }: { title: string; children: ReactNode; onClose: () => void; wide?: boolean }) {
@@ -33,7 +33,7 @@ export function FilterBar({ fields, trades, value, onChange }: { fields: Field[]
         const field = fields.find(f => f.id === rule.field)
         if (!field) return null
         const update = (patch: Partial<typeof rule>) => onChange({ ...value, rules: value.rules.map((r, i) => i === index ? { ...r, ...patch } : r) })
-        const options = [...new Set(trades.map(t => t.values[field.id]).filter(v => v !== undefined && v !== '').map(String))].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
+        const options = [...new Set(trades.map(t => t.values[field.id]).filter(v => v !== undefined && v !== '').map(v => String(characteristicValue(field, v))))].sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
         return <div className="filter-rule" key={field.id}><label>{field.name}{isNumeric(field) ? <div className="range-inputs"><input type="number" step="any" placeholder="Min" aria-label={`${field.name} minimum`} disabled={rule.missing} value={rule.min || ''} onChange={e => update({ min: e.target.value })} /><span>–</span><input type="number" step="any" placeholder="Max" aria-label={`${field.name} maximum`} disabled={rule.missing} value={rule.max || ''} onChange={e => update({ max: e.target.value })} /></div> : <select aria-label={`Filter ${field.name}`} value={rule.missing ? '__missing__' : rule.value || ''} onChange={e => update({ missing: e.target.value === '__missing__', value: e.target.value === '__missing__' ? '' : e.target.value })}><option value="">All values</option><option value="__missing__">Not recorded</option>{options.map(v => <option value={v} key={v}>{v}</option>)}</select>}</label>
           {isNumeric(field) && <label className="check-label filter-missing"><input type="checkbox" checked={!!rule.missing} onChange={e => update({ missing: e.target.checked })} />Missing</label>}
           <button className="icon-button remove-filter" aria-label={`Remove ${field.name} filter`} onClick={() => onChange({ ...value, rules: value.rules.filter((_, i) => i !== index) })}><X size={14} /></button></div>

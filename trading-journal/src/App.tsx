@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Activity, ArrowUpRight, BookOpen, CheckCircle2, Database, LayoutDashboard, Moon, Plus, Settings, Sun, Zap } from 'lucide-react'
+import { Activity, ArrowUpRight, BookOpen, CheckCircle2, Database, LayoutDashboard, Moon, Plus, Settings, Sun } from 'lucide-react'
 import Dashboard from './components/Dashboard'
+import TurboIcon from './components/TurboIcon'
 import TradeEntry from './components/TradeEntry'
 import TradeTable from './components/TradeTable'
 import DailyJournal from './components/DailyJournal'
 import Preferences from './components/Preferences'
-import { isComplete, learnOptions, normalizeValues, type JournalData, type Trade, type Values } from './lib/model'
+import { isComplete, learnOptions, normalizeValues, normalizeCharacteristics, type JournalData, type Trade, type Values } from './lib/model'
 import { loadData, saveData, storageMode } from './lib/storage'
 import { addDemo } from './lib/demo'
 type Page = 'dashboard' | 'entry' | 'master' | 'journal' | 'settings'
@@ -25,7 +26,7 @@ export default function App() {
   }, [])
   const update = useCallback((change: (current: JournalData) => JournalData): Promise<boolean> => {
     if (!dataRef.current) return Promise.resolve(false)
-    const next = change(dataRef.current)
+    const next = normalizeCharacteristics(change(dataRef.current))
     dataRef.current = next; setData(next); pending.current++; setStatus('saving')
     const task = queue.current.then(async () => {
       try { await saveData(next); saveFailed.current = false; setSaveError(''); return true }
@@ -51,10 +52,10 @@ export default function App() {
   }
   const deleteTrade = async (id: string) => { const result = await update(current => ({ ...current, trades: current.trades.filter(t => t.id !== id) })); if (result) { if (editing?.id === id) { dirty.current = false; setEditing(undefined); setFormKey(k => k + 1) } notify('Trade deleted. Analytics updated.') } return result }
   const demo = async () => { if (await update(addDemo)) notify('64 sample trades added. Remove them anytime in Settings.') }
-  if (loadError) return <div className="boot-screen"><Zap size={40} /><h1>Your data couldn’t be opened.</h1><p>{loadError}</p><p>Existing storage has been left untouched.</p><button className="primary" onClick={() => location.reload()}>Try again</button></div>
-  if (!data) return <div className="boot-screen"><Zap size={40} /><h1>Starting Turbo Journal…</h1></div>
+  if (loadError) return <div className="boot-screen"><TurboIcon size={40} /><h1>Your data couldn’t be opened.</h1><p>{loadError}</p><p>Existing storage has been left untouched.</p><button className="primary" onClick={() => location.reload()}>Try again</button></div>
+  if (!data) return <div className="boot-screen"><TurboIcon size={40} /><h1>Starting Turbo Journal…</h1></div>
   const drafts = data.trades.filter(t => !isComplete(t, data.fields)).length
-  return <div className="app-shell"><aside className="sidebar"><button className="brand" onClick={() => navigate('dashboard')} aria-label="Turbo Journal home"><span className="brand-mark"><Zap size={25} fill="currentColor" /></span><span><strong>TURBO<span>↗</span></strong><small>TRADING JOURNAL</small></span></button><div className="sidebar-caption">YOUR TRADING WORKSPACE</div><nav aria-label="Main navigation">{pages.map(({ id, name, icon: Icon }) => <button key={id} className={`nav-link ${page === id ? 'active' : ''}`} aria-current={page === id ? 'page' : undefined} onClick={() => navigate(id)}><Icon size={19} /><span>{name}</span>{id === 'entry' && drafts > 0 && <b>{drafts}</b>}</button>)}</nav><div className="sidebar-bottom"><div className="sidebar-note"><span className="eyebrow">LESS GUESSWORK.</span><strong>More perspective.</strong><p>Your process is your edge.<br />Make every trade count.</p><ArrowUpRight size={27} /></div><button className="theme-toggle" onClick={() => { void update(current => ({ ...current, theme: current.theme === 'dark' ? 'light' : 'dark' })) }}>{data.theme === 'dark' ? <Sun size={17} /> : <Moon size={17} />}<span>{data.theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}</span><span className="theme-switch"><i /></span></button><div className="local-label"><span className="status-dot" />{storageMode()}</div></div></aside>
+  return <div className="app-shell"><aside className="sidebar"><button className="brand" onClick={() => navigate('dashboard')} aria-label="Turbo Journal home"><span className="brand-mark"><TurboIcon size={29} /></span><span><strong>TURBO<span>↗</span></strong><small>TRADING JOURNAL</small></span></button><div className="sidebar-caption">YOUR TRADING WORKSPACE</div><nav aria-label="Main navigation">{pages.map(({ id, name, icon: Icon }) => <button key={id} className={`nav-link ${page === id ? 'active' : ''}`} aria-current={page === id ? 'page' : undefined} onClick={() => navigate(id)}><Icon size={19} /><span>{name}</span>{id === 'entry' && drafts > 0 && <b>{drafts}</b>}</button>)}</nav><div className="sidebar-bottom"><div className="sidebar-note"><span className="eyebrow">LESS GUESSWORK.</span><strong>More perspective.</strong><p>Your process is your edge.<br />Make every trade count.</p><ArrowUpRight size={27} /></div><button className="theme-toggle" onClick={() => { void update(current => ({ ...current, theme: current.theme === 'dark' ? 'light' : 'dark' })) }}>{data.theme === 'dark' ? <Sun size={17} /> : <Moon size={17} />}<span>{data.theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}</span><span className="theme-switch"><i /></span></button><div className="local-label"><span className="status-dot" />{storageMode()}</div></div></aside>
     <div className="workspace"><header className="topbar"><div className="breadcrumb">Workspace <span>/</span> <strong>{pages.find(p => p.id === page)?.name}</strong></div><div className="topbar-right"><span className={`save-status ${status === 'error' ? 'negative' : ''}`} role="status"><CheckCircle2 size={14} />{status === 'saving' ? 'Saving…' : status === 'error' ? 'Unsaved changes' : 'Saved locally'}</span><span className="version-pill">YOUR EDGE, DECODED</span></div></header>
     <main>{saveError && <div className="save-error" role="alert"><strong>Changes are in memory but haven’t been saved.</strong><span>{saveError}</span><button className="secondary compact" onClick={() => { void update(current => ({ ...current })) }}>Retry save</button></div>}
       {page === 'dashboard' && <Dashboard data={data} onNew={newTrade} onDemo={() => { void demo() }} />}

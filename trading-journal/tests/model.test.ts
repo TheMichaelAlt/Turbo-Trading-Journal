@@ -1,7 +1,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { defaultFields, fieldError, initialData, isComplete, learnOptions, migrateLegacy, normalizeValues, parseBackup, validateField, type Field, type Trade } from '../src/lib/model.ts'
-const complete = (patch = {}): Trade => ({ id: 'test', createdAt: '2026-09-01T09:30:00Z', updatedAt: '2026-09-01T10:00:00Z', values: { date: '2026-09-01', timeIn: '09:30', timeOut: '10:00', direction: 'Long', contract: 'ES', size: 1, pnl: 0, account: 'Sim', strategy: 'Breakout', ...patch } })
+import { defaultFields, fieldError, initialData, isComplete, learnOptions, migrateLegacy, normalizeValues, normalizeCharacteristics, parseBackup, validateField, type Field, type Trade } from '../src/lib/model.ts'
+const complete = (patch = {}): Trade => ({ id: 'test', createdAt: '2026-09-01T09:30:00Z', updatedAt: '2026-09-01T10:00:00Z', values: { date: '2026-09-01', timeIn: '09:30', timeOut: '10:00', direction: 'LONG', contract: 'ES', size: 1, pnl: 0, account: 'SIM', strategy: 'BREAKOUT', ...patch } })
 test('all nine required default fields govern completion; zero PnL is valid', () => {
   const fields = defaultFields()
   assert.equal(fields.filter(f => f.required).length, 9)
@@ -31,9 +31,9 @@ test('field validation handles score bounds, fractional positions, resilience bo
   assert.equal(fieldError(find('pnl'), Infinity), 'Enter a valid number')
 })
 test('normalization preserves zero and negatives without inventing values', () => {
-  assert.deepEqual(normalizeValues({ pnl: '0', size: '1.5', confidence: '', hpResilience: '-10.25', notes: '  a lesson  ' }, defaultFields()), { pnl: 0, size: 1.5, hpResilience: -10.25, notes: 'a lesson' })
+  assert.deepEqual(normalizeValues({ pnl: '0', size: '1.5', confidence: '', hpResilience: '-10.25', notes: '  a lesson  ' }, defaultFields()), { pnl: 0, size: 1.5, hpResilience: -10.25, notes: '  a lesson  ' })
   const fields = learnOptions(defaultFields(), { strategy: 'My new setup' })
-  assert.ok(fields.find(f => f.id === 'strategy')!.options.includes('My new setup'))
+  assert.ok(fields.find(f => f.id === 'strategy')!.options.includes('MY NEW SETUP'))
 })
 test('schema editor rejects duplicate names and invalid score ranges', () => {
   const f: Field = { id: 'custom', name: 'Confidence score', type: 'score', min: 1, max: 5, required: false, analyze: true, filter: true, options: [] }
@@ -53,9 +53,33 @@ test('legacy SQLite rows retain IDs, zero PnL, notes and unconfigured custom tag
   const result = migrateLegacy([{ id: 7, date: '2026-09-01', time_in: '09:30', time_out: '10:00', direction: 'SHORT', size: 1, pnl: 0, contract: 'ES', account: 'Sim', trade_type: 'Breakout', notes: 'Keep me', custom_tags: '{"Mood":"Calm","Unlisted":0}' }], ['Mood'])
   assert.equal(result.trades[0].id, 'legacy-7')
   assert.equal(result.trades[0].values.pnl, 0)
-  assert.equal(result.trades[0].values.direction, 'Short')
+  assert.equal(result.trades[0].values.direction, 'SHORT')
   assert.equal(result.trades[0].values.notes, 'Keep me')
   assert.equal(result.trades[0].values['legacy-field-1'], '0')
   assert.equal(isComplete(result.trades[0], result.fields), true)
   assert.doesNotThrow(() => parseBackup(result))
+})
+test('characteristics and dropdowns normalize across old trades without changing notes, writing, IDs or numeric values', () => {
+  const data = initialData()
+  data.fields.push({ id: 'mood', name: 'Mood', type: 'text', required: false, filter: true, analyze: true, archived: true, options: ['Happy', 'happy', ' HAPPY ', 'Tired'] })
+  data.fields.find(f => f.id === 'contract')!.options.push('mnq', 'Mnq ')
+  data.trades = [complete({ contract: ' mnq ', strategy: 'Orb', account: 'blu1', direction: 'long', mood: 'happy', pnl: 429, notes: '  Keep My Case\nAnd spacing.  ' })]
+  data.journals['2026-09-01'] = { text: 'My Mixed CASE reflection.', updatedAt: '2026-09-01T12:00:00Z' }
+  const normalized = parseBackup(JSON.parse(JSON.stringify(data)))
+  assert.equal(normalized.trades.length, 1)
+  assert.equal(normalized.trades[0].id, data.trades[0].id)
+  assert.equal(normalized.trades[0].updatedAt, data.trades[0].updatedAt)
+  assert.deepEqual(normalized.trades[0].values, { ...data.trades[0].values, contract: 'MNQ', strategy: 'ORB', account: 'BLU1', direction: 'LONG', mood: 'HAPPY' })
+  assert.deepEqual(normalized.journals, data.journals)
+  assert.deepEqual(normalized.fields.find(f => f.id === 'mood')!.options, ['HAPPY', 'TIRED'])
+  assert.equal(normalized.fields.find(f => f.id === 'contract')!.options.filter(o => o === 'MNQ').length, 1)
+  assert.equal(normalizeCharacteristics(normalized), normalized)
+  assert.equal(isComplete(normalized.trades[0], normalized.fields), true)
+  assert.equal(data.trades[0].values.contract, ' mnq ')
+})
+test('new entries capitalize all text characteristics except notes and never add case-duplicate options', () => {
+  const fields = defaultFields()
+  const values = normalizeValues({ contract: 'mnq', account: 'blu1', strategy: 'Pullback', setupGrade: 'a+', notes: 'Mixed Case notes.' }, fields)
+  assert.deepEqual(values, { contract: 'MNQ', account: 'BLU1', strategy: 'PULLBACK', setupGrade: 'A+', notes: 'Mixed Case notes.' })
+  assert.equal(learnOptions(fields, { contract: 'mnq' }).find(f => f.id === 'contract')!.options.filter(o => o === 'MNQ').length, 1)
 })

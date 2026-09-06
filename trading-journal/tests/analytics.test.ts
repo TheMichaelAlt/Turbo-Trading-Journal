@@ -46,3 +46,13 @@ test('chronological drawdown, overnight holding time and daily totals are accura
   assert.equal(metrics([trades[1]]).avgDuration, 20)
   assert.deepEqual(dailyResults(trades), [{ date: '2026-08-31', value: 100 }, { date: '2026-09-01', value: -130 }])
 })
+test('case variants share one analytics row and match the same filters even before storage normalization', () => {
+  const trades = [trade(140, 0, { contract: 'mnq', strategy: 'orb' }), trade(289, 1, { contract: 'MNQ', strategy: 'ORB' }), trade(289, 2, { contract: ' Mnq ', strategy: 'Orb' })]
+  const groups = groupTrades(trades, ['contract', 'strategy'].map(id => defaultFields().find(f => f.id === id)!))
+  assert.equal(groups.length, 1)
+  assert.deepEqual(groups[0].labels, ['MNQ', 'ORB'])
+  assert.equal(groups[0].stats.net, 718)
+  assert.equal(groups[0].stats.count, 3)
+  assert.equal(groups[0].stats.winRate, 100)
+  assert.equal(filterTrades(trades, { ...emptyFilters(), rules: [{ field: 'contract', value: 'MnQ' }, { field: 'strategy', value: 'ORB' }] }).length, 3)
+})

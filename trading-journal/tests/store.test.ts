@@ -29,7 +29,7 @@ test('first launch migrates the starter tables once and leaves legacy data intac
     legacy.prepare('INSERT INTO trades VALUES (1, ?, ?, ?)').run('2026-09-01', 0, '{"Mood":"Calm"}')
     legacy.prepare('INSERT INTO settings VALUES (?, ?)').run('custom_attributes', '["Mood"]'); legacy.close()
     let store = new JournalStore(filename), data = store.load()
-    assert.equal(data.trades[0].values.pnl, 0); assert.equal(data.trades[0].values['legacy-field-0'], 'Calm')
+    assert.equal(data.trades[0].values.pnl, 0); assert.equal(data.trades[0].values['legacy-field-0'], 'CALM')
     data = { ...data, trades: [] }; store.save(data); store.close()
     store = new JournalStore(filename); assert.equal(store.load().trades.length, 0); store.close()
     const original = new DatabaseSync(filename); assert.equal((original.prepare('SELECT count(*) AS n FROM trades').get() as { n: number }).n, 1); original.close()

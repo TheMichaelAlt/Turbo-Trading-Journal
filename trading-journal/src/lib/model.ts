@@ -14,6 +14,14 @@ export interface JournalData {
 export const numericTypes: FieldType[] = ['decimal', 'integer', 'percent', 'score']
 export const isNumeric = (field: Field) => numericTypes.includes(field.type)
 export const isBlank = (value: unknown) => value === undefined || value === null || String(value).trim() === ''
+export const canonicalText = (value: unknown) => String(value ?? '').trim().toUpperCase()
+export const isTextCharacteristic = (field: Field) => field.type === 'text' && field.id !== 'notes'
+export const characteristicValue = (field: Field, value: Value): Value => isTextCharacteristic(field) ? canonicalText(value) : value
+export function normalizeField(field: Field): Field {
+  if (!isTextCharacteristic(field)) return field
+  const options = [...new Set(field.options.map(canonicalText).filter(Boolean))]
+  return options.length === field.options.length && options.every((v, i) => v === field.options[i]) ? field : { ...field, options }
+}
 const field = (id: string, name: string, type: FieldType, required: boolean, extra: Partial<Field> = {}): Field => ({
   id, name, type, required, filter: true, analyze: true, options: [], builtin: true, ...extra,
 })
@@ -38,7 +46,7 @@ export function defaultFields(): Field[] {
     field('hpResilience', 'HP resilience', 'decimal', false, { min: -150, max: 150 }),
     field('hgResilience', 'HG resilience', 'decimal', false, { min: -150, max: 150 }),
     field('setupGrade', 'Setup grade', 'text', false, { options: ['A+', 'A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'D', 'F'] }),
-  ]
+  ].map(normalizeField)
 }
 export const initialData = (): JournalData => ({ version: 1, fields: defaultFields(), trades: [], journals: {}, theme: 'dark', currency: 'USD' })
 export const today = () => {
@@ -61,7 +69,7 @@ export function fieldError(field: Field, value: unknown): string | undefined {
   }
   if (field.type === 'date' && !validDate(String(value))) return 'Enter a valid date'
   if (field.type === 'time' && !/^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/.test(String(value))) return 'Enter a valid time'
-  if (field.id === 'direction' && !['Long', 'Short'].includes(String(value))) return 'Select Long or Short'
+  if (field.id === 'direction' && !['LONG', 'SHORT'].includes(canonicalText(value))) return 'Select LONG or SHORT'
 }
 export const tradeIssues = (values: Values, fields: Field[]) => activeFields(fields).flatMap(f => {
   const error = fieldError(f, values[f.id])
@@ -71,12 +79,28 @@ export const isComplete = (trade: Trade, fields: Field[]) => tradeIssues(trade.v
 export function normalizeValues(values: Values, fields: Field[]): Values {
   return Object.fromEntries(Object.entries(values).filter(([, value]) => !isBlank(value)).map(([id, value]) => {
     const f = fields.find(item => item.id === id)
-    return [id, f && isNumeric(f) && Number.isFinite(Number(value)) ? Number(value) : String(value).trim()]
+    return [id, f?.id === 'notes' ? String(value) : f && isNumeric(f) && Number.isFinite(Number(value)) ? Number(value) : f && isTextCharacteristic(f) ? canonicalText(value) : String(value).trim()]
   }))
 }
 export function learnOptions(fields: Field[], values: Values): Field[] {
-  return fields.map(f => f.type === 'text' && f.id !== 'notes' && !isBlank(values[f.id]) && !f.options.includes(String(values[f.id]))
-    ? { ...f, options: [...f.options, String(values[f.id])] } : f)
+  return fields.map(normalizeField).map(f => isTextCharacteristic(f) && !isBlank(values[f.id]) && !f.options.includes(canonicalText(values[f.id]))
+    ? { ...f, options: [...f.options, canonicalText(values[f.id])] } : f)
+}
+// Apply the same rules to saved trades, old backups, archived characteristics, and fresh entries.
+// IDs, numbers, timestamps, notes, and daily journal writing are left intact.
+export function normalizeCharacteristics(data: JournalData): JournalData {
+  const fields = data.fields.map(normalizeField)
+  const textFields = fields.filter(isTextCharacteristic)
+  const trades = data.trades.map(trade => {
+    const changes = textFields.flatMap(f => {
+      const value = trade.values[f.id]
+      if (value === undefined) return []
+      const normalized = canonicalText(value)
+      return normalized === value ? [] : [[f.id, normalized] as const]
+    })
+    return changes.length ? { ...trade, values: { ...trade.values, ...Object.fromEntries(changes) } } : trade
+  })
+  return fields.every((f, i) => f === data.fields[i]) && trades.every((t, i) => t === data.trades[i]) ? data : { ...data, fields, trades }
 }
 export function validateField(field: Field, fields: Field[]): string | undefined {
   if (!field.name.trim()) return 'Give this characteristic a name.'
@@ -109,7 +133,7 @@ export function parseBackup(input: unknown): JournalData {
     if (!validDate(date) || !entry || typeof entry.text !== 'string' || typeof entry.updatedAt !== 'string') throw new Error('Backup contains an invalid journal entry.')
   }
   if (!['dark', 'light'].includes(d.theme) || !['USD', 'EUR', 'GBP', 'CAD', 'AUD', 'JPY'].includes(d.currency)) throw new Error('Backup contains invalid display settings.')
-  return d
+  return normalizeCharacteristics(d)
 }
 
 export function migrateLegacy(rows: Record<string, unknown>[], attributes: unknown): JournalData {
@@ -129,5 +153,5 @@ export function migrateLegacy(rows: Record<string, unknown>[], attributes: unkno
     custom.forEach((f, index) => { const value = tags[i][[...names][index]]; if (!isBlank(value)) values[f.id] = String(value) })
     return { id: `legacy-${row.id ?? i}`, values, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
   })
-  return data
+  return normalizeCharacteristics(data)
 }
