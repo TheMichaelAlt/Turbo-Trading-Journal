@@ -2,7 +2,11 @@ The Turbo Trading Journal is a lightweight desktop application to log and analyz
 
 It is completely free, open source, and runs locally on your device for complete data privacy.
 
-To install or share the Windows application, use [Turbo Trading Journal 1.0.0 Setup](trading-journal/release/1.0.0/Turbo%20Trading%20Journal-Windows-1.0.0-Setup.exe). Your friend needs only this installer; Node.js and the source project are not required. [Installation and upgrade instructions](trading-journal/release/1.0.0/INSTALL-AND-UPDATE.txt) are included alongside it. Newer installers update the app while keeping trades and journal data in the same Windows user-data folder.
+**[Download for Windows — latest release](https://github.com/TheMichaelAlt/Turbo-Trading-Journal/releases/latest)**
+
+On the release page, expand **Assets** and download the file ending in `Setup.exe`. Run it, then open Turbo Trading Journal from your desktop shortcut or Start menu. Node.js and the source project are not required. The installer is unsigned, so Windows may show an unknown-publisher notice. Downloads become available once the first release is published.
+
+For updates, save and close the app, then run the newer installer over your existing installation under the same Windows account. Your trades and journal pages stay in the same user-data folder. Updates are installed manually.
 
 For local development, double-click **Start Turbo Journal.cmd** in this folder. It builds the latest edits and opens the desktop app without requiring a development server to stay running. Node.js 24+ and the project's dependencies must already be installed.
 

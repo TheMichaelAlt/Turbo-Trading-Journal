@@ -13,6 +13,8 @@ test('SQLite atomically persists trades, fields and long journal pages across re
     data.journals['2026-09-01'] = { text: 'A reflection. '.repeat(5000), updatedAt: '2026-09-01T12:00:00Z' }
     data.trades.push({ id: 'zero', values: { pnl: 0 }, createdAt: '2026-09-01', updatedAt: '2026-09-01' })
     data.theme = 'light'
+    data.fields.find(f => f.id === 'ddRatio')!.archived = true
+    data.trades[0].values.ddRatio = 12.75
     store.save(data); store.close()
     store = new JournalStore(filename)
     assert.deepEqual(store.load(), data)

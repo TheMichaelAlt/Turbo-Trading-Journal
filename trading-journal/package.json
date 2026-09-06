@@ -1,7 +1,7 @@
 {
   "name": "trading-journal",
   "private": true,
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "A customizable trading journal with local storage, detailed analytics, and compact trade entry.",
   "author": "Turbo Trading Journal",
   "type": "module",
@@ -46,5 +46,7 @@
     "vite-plugin-electron": "^0.28.6"
   },
   "main": "dist-electron/main.js",
-  "engines": { "node": ">=24" }
+  "engines": {
+    "node": ">=24"
+  }
 }

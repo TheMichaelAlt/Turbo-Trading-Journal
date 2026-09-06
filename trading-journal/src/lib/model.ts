@@ -54,6 +54,24 @@ export const today = () => {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
 }
 export const activeFields = (fields: Field[]) => fields.filter(f => !f.archived)
+// Keep every recorded column discoverable, even in older imports whose field
+// definitions are missing. Removed definitions normally remain as archived fields.
+export function historicalFields(data: JournalData): Field[] {
+  const fields = [...data.fields], known = new Set(fields.map(f => f.id))
+  for (const trade of data.trades) for (const id of Object.keys(trade.values)) {
+    if (known.has(id)) continue
+    known.add(id)
+    fields.push({ id, name: id, type: 'text', options: [], required: false, filter: false, analyze: false, archived: true })
+  }
+  return fields
+}
+export function mergeTradeValues(raw: Values, fields: Field[], previous: Values = {}): Values {
+  const active = new Set(activeFields(fields).map(f => f.id))
+  return {
+    ...Object.fromEntries(Object.entries(previous).filter(([id]) => !active.has(id))),
+    ...normalizeValues(Object.fromEntries(Object.entries(raw).filter(([id]) => active.has(id))), fields),
+  }
+}
 export function validDate(value: string): boolean {
   return /^\d{4}-\d{2}-\d{2}$/.test(value) && Number(value.slice(0, 4)) > 0 && !Number.isNaN(Date.parse(value)) && new Date(value).toISOString().slice(0, 10) === value
 }
@@ -122,7 +140,7 @@ export function parseBackup(input: unknown): JournalData {
   }
   for (const f of defaultFields()) {
     const actual = d.fields.find(item => item.id === f.id)
-    if (!actual || actual.type !== f.type || actual.builtin !== true || actual.archived) throw new Error('Backup is missing a default characteristic or has changed its type.')
+    if (!actual || actual.type !== f.type || actual.builtin !== true) throw new Error('Backup is missing a default characteristic or has changed its type.')
   }
   unique.clear()
   for (const t of d.trades) {

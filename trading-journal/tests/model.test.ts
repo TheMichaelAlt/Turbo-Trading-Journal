@@ -1,7 +1,24 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { defaultFields, fieldError, initialData, isComplete, learnOptions, migrateLegacy, normalizeValues, normalizeCharacteristics, parseBackup, validateField, type Field, type Trade } from '../src/lib/model.ts'
+import { defaultFields, fieldError, historicalFields, initialData, isComplete, learnOptions, mergeTradeValues, migrateLegacy, normalizeValues, normalizeCharacteristics, parseBackup, validateField, type Field, type Trade } from '../src/lib/model.ts'
 const complete = (patch = {}): Trade => ({ id: 'test', createdAt: '2026-09-01T09:30:00Z', updatedAt: '2026-09-01T10:00:00Z', values: { date: '2026-09-01', timeIn: '09:30', timeOut: '10:00', direction: 'LONG', contract: 'ES', size: 1, pnl: 0, account: 'SIM', strategy: 'BREAKOUT', ...patch } })
+test('all defaults can be removed and restored without losing history or backup compatibility', () => {
+  const data = initialData()
+  data.trades = [complete({ ddRatio: 0, notes: '  Keep My notes\nExactly.  ', orphanNumber: -12.75, orphanText: '  Mixed Case  ' })]
+  data.fields = data.fields.map(f => ({ ...f, archived: true }))
+  assert.deepEqual(parseBackup(data), data)
+  assert.equal(isComplete(complete({ account: '' }), data.fields), true)
+  const restored = data.fields.map(f => ({ ...f, archived: false }))
+  assert.equal(isComplete(complete({ account: '' }), restored), false)
+  assert.deepEqual(mergeTradeValues({ ddRatio: 999, notes: 'overwrite' }, data.fields, data.trades[0].values), data.trades[0].values)
+  assert.ok(historicalFields(data).some(f => f.id === 'orphanNumber'))
+  const edited = mergeTradeValues({ ...data.trades[0].values, pnl: 100, ddRatio: 999 }, data.fields.map(f => f.id === 'pnl' ? { ...f, archived: false } : f), data.trades[0].values)
+  assert.equal(edited.pnl, 100)
+  assert.equal(edited.ddRatio, 0)
+  assert.equal(edited.orphanNumber, -12.75)
+  assert.equal(edited.orphanText, '  Mixed Case  ')
+  assert.equal(edited.notes, '  Keep My notes\nExactly.  ')
+})
 test('all nine required default fields govern completion; zero PnL is valid', () => {
   const fields = defaultFields()
   assert.equal(fields.filter(f => f.required).length, 9)

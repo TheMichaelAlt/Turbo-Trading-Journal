@@ -13,8 +13,8 @@ export function FieldInput({ field, value, onChange, error, compact = false }: {
   </div>
 }
 export default function TradeEntry({ data, editing, onEdit, onSave, onDelete, onCancel, onDirty, minimalist = false, appearance, status }: { minimalist?: boolean; appearance?: React.ReactNode; status?: string; data: JournalData; editing?: Trade; onEdit: (trade: Trade) => void; onSave: (values: Values, id?: string) => Promise<boolean>; onDelete: (id: string) => Promise<boolean>; onCancel: () => void; onDirty: (dirty: boolean) => void }) {
-  const fresh = () => ({ date: today(), direction: 'LONG' })
-  const [values, setValues] = useState<Values>(() => editing ? { ...editing.values, direction: editing.values.direction || 'LONG' } : fresh())
+  const fresh = (): Values => Object.fromEntries(activeFields(data.fields).flatMap(field => field.id === 'date' ? [['date', today()]] : field.id === 'direction' ? [['direction', 'LONG']] : []))
+  const [values, setValues] = useState<Values>(() => editing ? { ...editing.values, ...(activeFields(data.fields).some(f => f.id === 'direction') && !editing.values.direction ? { direction: 'LONG' } : {}) } : fresh())
   const scrollRow = useRef<HTMLDivElement>(null)
   const submissionId = useRef(editing?.id || crypto.randomUUID())
   const [errors, setErrors] = useState<Record<string, string>>({})

@@ -8,7 +8,7 @@ import './components/Minimalist.css'
 import TradeTable from './components/TradeTable'
 import DailyJournal from './components/DailyJournal'
 import Preferences from './components/Preferences'
-import { isComplete, learnOptions, normalizeValues, normalizeCharacteristics, type JournalData, type Trade, type Values } from './lib/model'
+import { isComplete, learnOptions, mergeTradeValues, normalizeCharacteristics, type JournalData, type Trade, type Values } from './lib/model'
 import { loadData, saveData, storageMode } from './lib/storage'
 import { addDemo } from './lib/demo'
 import { APP_VERSION } from './lib/version'
@@ -51,8 +51,8 @@ export default function App() {
   const editTrade = (trade: Trade) => { if (!canLeave()) return; dirty.current = false; setEditing(trade); setFormKey(k => k + 1); setPage('entry') }
   const saveTrade = async (raw: Values, id?: string) => {
     const current = dataRef.current!
-    const values = normalizeValues(raw, current.fields), timestamp = new Date().toISOString()
     const existing = current.trades.find(t => t.id === id)
+    const values = mergeTradeValues(raw, current.fields, existing?.values), timestamp = new Date().toISOString()
     const trade: Trade = { id: id || crypto.randomUUID(), createdAt: existing?.createdAt || timestamp, updatedAt: timestamp, values, ...(existing?.demo ? { demo: true } : {}) }
     const result = await update(state => ({ ...state, fields: learnOptions(state.fields, values), trades: state.trades.some(t => t.id === trade.id) ? state.trades.map(t => t.id === trade.id ? trade : t) : [...state.trades, trade] }))
     if (result) { dirty.current = false; setEditing(undefined); setFormKey(k => k + 1); notify(isComplete(trade, dataRef.current!.fields) ? 'Trade completed. Added to the master log and analytics.' : 'Unfinished trade saved. Finish it whenever you’re ready.') }

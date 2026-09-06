@@ -4,7 +4,7 @@ A local trading workspace with customizable trade characteristics, automatic com
 
 ## Run locally
 
-For a ready-to-install Windows app, use the Setup.exe in `release/1.0.0/`.
+For a ready-to-install Windows app, use the Setup.exe in `release/1.0.2/`.
 Your friend needs only that file. It includes the runtime and starts an empty
 journal on their PC. See `INSTALL-AND-UPDATE.txt` beside the installer and
 [RELEASING.md](RELEASING.md) for future releases. Upgrades use a newer installer
@@ -39,8 +39,14 @@ Open http://127.0.0.1:5173. Both commands use the same port, so run one at a tim
 7. Browse the dashboard's **Trading calendar** by month to see each day's net PnL, completed trade count, win rate, and strategies used. It respects all dashboard filters. Select a trading day for full details. Trades without PnL count toward the trade total but are excluded from PnL and win rate.
 8. Switch between **Midnight drive** (dark) and **Race day** (light) using the sidebar or Settings. Both use teal and racing orange, with a turbocharger emblem.
 9. Choose **Minimalist** beside the theme button to enter trades in a short horizontal strip. On desktop it docks above the taskbar and can shrink to 180 pixels tall, including the Windows title bar. Scroll the characteristics with the mouse wheel, trackpad, scrollbar, or Tab key. Save stays visible, and the unfinished-trade dropdown resumes entries. **Full mode** restores the previous window size without clearing trade edits. Your mode preference survives a restart; save a trade before closing to retain the entered values.
+10. Use **Remove** on any characteristic in Settings, including defaults, to hide it from full and minimalist trade entry. Removed characteristics keep their definitions and old values. Expand **Removed characteristics** to restore them with their previous options and required rules. The master log still displays, searches, and exports historical values, including when an old trade is edited. Its Columns picker includes removed fields. Hover or focus a trade's notes icon for a preview; click it to read a longer note in a dialog.
 
 The Windows title bar, taskbar, and installer use the orange-and-teal turbo icon. Its vector source is `public/turbo.svg`; run `node scripts/generate-icons.mjs` with Microsoft Edge installed to regenerate the PNG and multi-resolution ICO assets.
+
+The master log defaults to the active characteristics in Settings. Removed fields
+remain unchecked in **Columns**, where you can enable them to inspect historical
+values. **Use active characteristics** resets the selection. CSV exports and
+search still include historical values, even for columns hidden from the table.
 
 ## Defaults and completion
 
