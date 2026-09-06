@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Activity, ArrowUpRight, BookOpen, CheckCircle2, Database, LayoutDashboard, Plus, Settings } from 'lucide-react'
+import { Activity, ArrowUpRight, BookOpen, CheckCircle2, Database, LayoutDashboard, Plus, Settings, Upload } from 'lucide-react'
 import Dashboard from './components/Dashboard'
 import TurboIcon from './components/TurboIcon'
 import TradeEntry from './components/TradeEntry'
@@ -8,12 +8,13 @@ import './components/Minimalist.css'
 import TradeTable from './components/TradeTable'
 import DailyJournal from './components/DailyJournal'
 import Preferences from './components/Preferences'
+import ImportTrades from './components/ImportTrades'
 import { isComplete, learnOptions, mergeTradeValues, normalizeCharacteristics, type JournalData, type Trade, type Values } from './lib/model'
 import { loadData, saveData, storageMode } from './lib/storage'
 import { addDemo } from './lib/demo'
 import { APP_VERSION } from './lib/version'
-type Page = 'dashboard' | 'entry' | 'master' | 'journal' | 'settings'
-const pages: { id: Page; name: string; icon: typeof Activity }[] = [{ id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard }, { id: 'entry', name: 'Trade log', icon: Plus }, { id: 'master', name: 'Master trade log', icon: Database }, { id: 'journal', name: 'Daily journal', icon: BookOpen }, { id: 'settings', name: 'Settings', icon: Settings }]
+type Page = 'dashboard' | 'entry' | 'master' | 'journal' | 'settings' | 'import'
+const pages: { id: Page; name: string; icon: typeof Activity }[] = [{ id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard }, { id: 'entry', name: 'Trade log', icon: Plus }, { id: 'master', name: 'Master trade log', icon: Database }, { id: 'journal', name: 'Daily journal', icon: BookOpen }, { id: 'import', name: 'Import trades', icon: Upload }, { id: 'settings', name: 'Settings', icon: Settings }]
 export default function App() {
   const [data, setData] = useState<JournalData | null>(null), dataRef = useRef<JournalData | null>(null)
   const [page, setPage] = useState<Page>('dashboard'), [editing, setEditing] = useState<Trade | undefined>(), [formKey, setFormKey] = useState(0)
@@ -45,7 +46,7 @@ export default function App() {
     return task
   }, [])
   const onDirty = useCallback((value: boolean) => { dirty.current = value }, [])
-  const canLeave = () => !dirty.current || window.confirm('Discard the unsaved changes to this trade?')
+  const canLeave = () => !dirty.current || window.confirm('Discard the unsaved changes on this page?')
   const navigate = (next: Page) => { if (next === page) return; if (!canLeave()) return; dirty.current = false; setPage(next); setEditing(undefined) }
   const newTrade = () => { if (!canLeave()) return; dirty.current = false; setEditing(undefined); setFormKey(k => k + 1); setPage('entry') }
   const editTrade = (trade: Trade) => { if (!canLeave()) return; dirty.current = false; setEditing(trade); setFormKey(k => k + 1); setPage('entry') }
@@ -73,6 +74,7 @@ export default function App() {
       {page === 'entry' && <TradeEntry key={formKey} data={data} editing={editing} onEdit={editTrade} onSave={saveTrade} onDelete={deleteTrade} onCancel={newTrade} onDirty={onDirty} minimalist={minimalist} appearance={appearance} status={status} />}
       {page === 'master' && <TradeTable data={data} onEdit={editTrade} onDelete={deleteTrade} onNew={newTrade} />}
       {page === 'journal' && <DailyJournal data={data} status={status} onChange={(date, text) => { void update(current => ({ ...current, journals: { ...current.journals, [date]: { text, updatedAt: new Date().toISOString() } } })) }} />}
+      {page === 'import' && <ImportTrades data={data} update={update} notify={notify} onDirty={onDirty} />}
       {page === 'settings' && <Preferences data={data} update={update} onDemo={() => { void demo() }} notify={notify} />}
       <footer className="app-footer"><span>TURBO JOURNAL</span><span>Reflect. Refine. Repeat.</span><span>LOCAL FIRST · V{APP_VERSION}</span></footer>
     </main></div>{toast && <div className="toast" role="status"><CheckCircle2 size={18} />{toast}<button aria-label="Dismiss notification" onClick={() => setToast('')}>×</button></div>}

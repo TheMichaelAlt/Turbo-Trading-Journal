@@ -4,7 +4,7 @@ A local trading workspace with customizable trade characteristics, automatic com
 
 ## Run locally
 
-For a ready-to-install Windows app, use the Setup.exe in `release/1.0.2/`.
+For a ready-to-install Windows app, use the Setup.exe in `release/1.1.0/`.
 Your friend needs only that file. It includes the runtime and starts an empty
 journal on their PC. See `INSTALL-AND-UPDATE.txt` beside the installer and
 [RELEASING.md](RELEASING.md) for future releases. Upgrades use a newer installer
@@ -95,3 +95,13 @@ npm run test:upgrade # Install/upgrade two isolated fixtures and verify data sur
 For browser tests on a machine without Edge, change the Playwright channel in `playwright.config.ts` or install Playwright Chromium. Automated tests use isolated browser contexts and temporary desktop profiles; they do not edit your actual journal. Desktop test profiles remain in the operating system's temporary folder for inspection. Installer packaging is a separate step from the development build.
 
 Core logic lives in `src/lib/model.ts` and `src/lib/analytics.ts`. `electron/store.ts` owns desktop storage and migration; `src/lib/storage.ts` provides the renderer bridge, browser storage, and exports.
+
+## Import another trade log
+
+Open **Import trades** in the menu and choose a CSV. Check the suggested column mappings, skip unwanted columns, or use **Add characteristic** beside a column to create a custom field (including its type, required flag, filter and analytics settings). New fields are staged until you import. Removed characteristics are not offered as mapping targets; restore them in Settings first if you want to append to their history.
+
+Select the source date and number formats. Use separate date and time columns; ISO dates and 12/24-hour times are supported. Currency symbols and accounting negatives are accepted, but amounts are not converted between currencies. Percent fractions can optionally be multiplied by 100. Supply defaults for unmapped fields such as account or strategy.
+
+Review the preview, edit cells, and uncheck unwanted rows. Invalid values block importing selected rows until corrected. Missing required fields are allowed and create unfinished trades. Exact duplicates (all nonblank values match) are skipped by default; turn that off to keep intentionally identical trades. Notes preserve their original case and line breaks; other text is capitalized. Existing trades and historical characteristics are retained.
+
+The final **Import trades** button saves the selected trades and any new characteristics together. If saving fails, **Retry import** safely retries the same batch. Files are processed locally, with limits of 10 MB, 10,000 trades and 200 columns. UTF-8 CSVs and BOM-marked UTF-16 files are supported, with comma, semicolon or tab separators and quoted multiline cells.

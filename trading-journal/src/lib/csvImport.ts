@@ -1,4 +1,4 @@
-import { activeFields, canonicalText, fieldError, isBlank, isNumeric, normalizeValues, tradeIssues, validDate, type Field, type Trade, type Values } from './model.ts'
+import { activeFields, canonicalText, fieldError, isBlank, isNumeric, tradeIssues, validDate, type Field, type JournalData, type Trade, type Values } from './model.ts'
 
 export type DateOrder = 'ymd' | 'mdy' | 'dmy'
 export interface ImportOptions { dateOrder: DateOrder; decimal: '.' | ','; fractionalPercent: boolean; skipDuplicates: boolean }
@@ -68,7 +68,7 @@ export function convertImportValue(raw: string, field: Field, options: ImportOpt
   if (field.type === 'date') {
     // ISO dates are always unambiguous. No timezone or locale guessing.
     if (validDate(text)) return text
-    const match = /^(\d{1,4})[/.\-](\d{1,2})[/.\-](\d{1,4})$/.exec(text)
+    const match = /^(\d{1,4})[/.-](\d{1,2})[/.-](\d{1,4})$/.exec(text)
     if (match) {
       const [a, b, c] = match.slice(1)
       const [year, month, day] = options.dateOrder === 'ymd' ? [a, b, c] : options.dateOrder === 'mdy' ? [c, a, b] : [c, b, a]
@@ -121,12 +121,14 @@ export function previewImport(csv: CsvData, mappings: string[], fields: Field[],
     const raw: Values = {}
     mappings.forEach((id, col) => { if (id) raw[id] = row.cells[col] })
     active.forEach(f => { if (!mapped.includes(f.id) && defaults[f.id] !== undefined) raw[f.id] = defaults[f.id] })
-    Object.assign(raw, corrections[index] || {})
     const converted: Values = {}
     active.forEach(f => { if (raw[f.id] !== undefined) converted[f.id] = convertImportValue(String(raw[f.id]), f, options) })
-    const values = normalizeValues(converted, fields)
+    // Preview cells display normalized journal units, so edits use those same units.
+    active.forEach(f => { if (corrections[index]?.[f.id] !== undefined) converted[f.id] = convertImportValue(corrections[index][f.id], f, defaultImportOptions) })
+    const values: Values = Object.fromEntries(Object.entries(converted).filter(([, value]) => !isBlank(value)))
     const issues = tradeIssues(values, fields)
     const errors = issues.filter(i => !isBlank(values[i.field.id])).map(i => `${i.field.name}: ${i.error}`)
+    active.filter(f => isNumeric(f) && !isBlank(values[f.id]) && typeof values[f.id] !== 'number').forEach(f => errors.push(`${f.name}: Check the number format.`))
     const missing = issues.filter(i => isBlank(values[i.field.id])).map(i => i.field.name)
     const empty = Object.keys(values).length === 0, fingerprint = tradeFingerprint(values)
     const duplicate = seen.has(fingerprint)
@@ -134,4 +136,17 @@ export function previewImport(csv: CsvData, mappings: string[], fields: Field[],
     if (included) seen.add(fingerprint)
     return { id: ids[index], line: row.line, values, errors, missing, empty, duplicate, included }
   })
+}
+
+// Stable IDs make retries safe after an optimistic save failure. Existing trades are never overwritten.
+export function applyImport(current: JournalData, fields: Field[], trades: Trade[]): JournalData {
+  const knownFields = new Set(current.fields.map(f => f.id)), knownTrades = new Set(current.trades.map(t => t.id))
+  const added = trades.filter(t => !knownTrades.has(t.id))
+  const nextFields = [...current.fields, ...fields.filter(f => !knownFields.has(f.id))].map(field => {
+    if (field.type !== 'text' || field.id === 'notes') return field
+    const options = new Set(field.options)
+    added.forEach(t => { if (!isBlank(t.values[field.id])) options.add(canonicalText(String(t.values[field.id]))) })
+    return { ...field, options: [...options] }
+  })
+  return { ...current, fields: nextFields, trades: [...current.trades, ...added] }
 }

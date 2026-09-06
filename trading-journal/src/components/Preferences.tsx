@@ -1,24 +1,10 @@
 import { useRef, useState } from 'react'
 import { Archive, Download, Moon, Pencil, Plus, RotateCcw, Sun, Upload } from 'lucide-react'
-import { activeFields, isComplete, isNumeric, parseBackup, today, validateField, type Field, type FieldType, type JournalData } from '../lib/model'
+import { activeFields, isNumeric, parseBackup, today, type Field, type JournalData } from '../lib/model'
 import { downloadFile, storageMode } from '../lib/storage'
 import { Modal } from './ui'
 import ReleaseInfo from './ReleaseInfo'
-function FieldEditor({ field, fields, trades, onSave, onClose }: { field: Field; fields: Field[]; trades: JournalData['trades']; onSave: (field: Field) => Promise<boolean>; onClose: () => void }) {
-  const [draft, setDraft] = useState<Field>({ ...field }), [options, setOptions] = useState(field.options.join(', ')), [error, setError] = useState(''), [busy, setBusy] = useState(false)
-  const update = (patch: Partial<Field>) => setDraft(prev => ({ ...prev, ...patch }))
-  const candidate = { ...draft, name: draft.name.trim(), options: [...new Set(options.split(/[,\n]/).map(o => o.trim()).filter(Boolean))] }
-  const nextFields = fields.some(f => f.id === field.id) ? fields.map(f => f.id === field.id ? candidate : f) : [...fields, candidate]
-  const before = trades.filter(t => isComplete(t, fields)).length, after = trades.filter(t => isComplete(t, nextFields)).length
-  return <Modal title={fields.some(f => f.id === field.id) ? 'Edit characteristic' : 'Add a characteristic'} onClose={onClose}><form onSubmit={async e => { e.preventDefault(); const message = validateField(candidate, fields); if (message) { setError(message); return } setBusy(true); if (await onSave(candidate)) onClose(); setBusy(false) }}>
-    <div className="form-grid two-col"><label className="full-width">Name<input autoFocus value={draft.name} onChange={e => update({ name: e.target.value })} placeholder="e.g. Mood, Market condition, Risk %" /></label><label>Value type<select value={draft.type} disabled={draft.builtin} onChange={e => update({ type: e.target.value as FieldType, min: e.target.value === 'score' ? 1 : undefined, max: e.target.value === 'score' ? 5 : undefined })}>{['text', 'decimal', 'integer', 'percent', 'score', 'date', 'time'].map(type => <option value={type} key={type}>{({ text: 'Text / dropdown', decimal: 'Decimal', integer: 'Integer', percent: 'Percent', score: 'Score', date: 'Date', time: 'Time' } as Record<string, string>)[type]}</option>)}</select></label>
-      {isNumeric(draft) && <><label>Minimum {draft.type !== 'score' && '(optional)'}<input type="number" step={['integer', 'score'].includes(draft.type) ? '1' : 'any'} value={draft.min ?? ''} onChange={e => update({ min: e.target.value === '' ? undefined : Number(e.target.value) })} /></label><label>Maximum {draft.type !== 'score' && '(optional)'}<input type="number" step={['integer', 'score'].includes(draft.type) ? '1' : 'any'} value={draft.max ?? ''} onChange={e => update({ max: e.target.value === '' ? undefined : Number(e.target.value) })} /></label></>}
-      {draft.type === 'text' && draft.id !== 'direction' && <label className="full-width">Dropdown options<textarea value={options} onChange={e => setOptions(e.target.value)} rows={3} placeholder="Happy, Calm, Tired, Frustrated" /><span className="help-text">Separate options with commas or new lines. New values entered on a trade are remembered.</span></label>}
-    </div><div className="field-flags"><label className="check-label"><input type="checkbox" checked={draft.required} onChange={e => update({ required: e.target.checked })} />Required to complete a trade</label><label className="check-label"><input type="checkbox" checked={draft.filter} onChange={e => update({ filter: e.target.checked })} />Available as a dashboard and master log filter</label><label className="check-label"><input type="checkbox" checked={draft.analyze} onChange={e => update({ analyze: e.target.checked })} />Generate an automatic analytics breakdown</label></div>
-    {before !== after && <div className="notice">Applying this changes your completed trade count from {before} to {after}. Incomplete trades move to the trade log.</div>}
-    {error && <p role="alert" className="form-error">{error}</p>}<div className="modal-actions"><button type="button" className="secondary" onClick={onClose}>Cancel</button><button className="primary" disabled={busy}>{busy ? 'Saving…' : 'Save characteristic'}</button></div>
-  </form></Modal>
-}
+import FieldEditor from './FieldEditor'
 export default function Preferences({ data, update, onDemo, notify }: { data: JournalData; update: (change: (current: JournalData) => JournalData) => Promise<boolean>; onDemo: () => void; notify: (message: string) => void }) {
   const [editing, setEditing] = useState<Field | null>(null), [search, setSearch] = useState(''), [restore, setRestore] = useState<JournalData | null>(null), [removeDemo, setRemoveDemo] = useState(false)
   const [importError, setImportError] = useState(''), [busy, setBusy] = useState(false)
