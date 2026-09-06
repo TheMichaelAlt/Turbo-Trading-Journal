@@ -1,0 +1,51 @@
+.appearance-controls{display:flex;gap:6px;padding:6px 0 12px}
+.appearance-toggle{display:flex;align-items:center;justify-content:center;gap:7px;flex:1;border:1px solid var(--border);border-radius:6px;min-height:33px;padding:6px 8px;color:var(--muted);font-size:11px;white-space:nowrap}
+.appearance-toggle svg{color:var(--orange);flex-shrink:0}
+.appearance-toggle:hover{background:var(--surface-alt);color:var(--text)}
+.layout-toggle svg{color:var(--teal)}
+.layout-toggle[aria-pressed=true]{background:var(--accent-bg);color:var(--teal);border-color:var(--teal)}
+.direction-toggle{width:100%;min-height:40px;display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border:1px solid var(--teal);border-radius:7px;background:var(--accent-bg);color:var(--teal);font-size:12px;font-weight:650;letter-spacing:.5px}
+.direction-toggle[data-direction=SHORT]{color:var(--orange);border-color:var(--orange);background:color-mix(in srgb,var(--orange) 10%,var(--input))}
+.direction-toggle:hover{filter:brightness(1.12)}
+.app-shell.minimalist{display:block;min-height:100vh;border-top:2px solid var(--orange)}
+.minimalist .sidebar,.minimalist .topbar,.minimalist .app-footer{display:none}
+.minimalist .workspace{margin:0;width:100%}
+.minimalist main{max-width:none;padding:0;margin:0}
+.quick-entry{padding:0 10px 4px;background:var(--bg)}
+.quick-toolbar{height:41px;display:flex;align-items:center;gap:10px;border-bottom:1px solid var(--border)}
+.quick-brand{display:flex;align-items:center;gap:7px;flex-shrink:0;font:700 12px 'Space Grotesk',sans-serif;letter-spacing:1px;color:var(--teal)}
+.quick-brand svg{color:var(--orange)}
+.quick-drafts{width:220px;min-width:110px;flex:0 1 220px;font-size:11px;min-height:28px;padding:4px 24px 4px 8px}
+.quick-toolbar .secondary{min-height:28px;padding:4px 9px;font-size:11px}
+.quick-toolbar .appearance-controls{margin-left:auto;padding:0;flex-shrink:0}
+.quick-toolbar .appearance-toggle{min-height:28px;padding:4px 8px;font-size:10px}
+.quick-status{display:flex;gap:5px;align-items:center;font-size:10px;color:var(--muted);white-space:nowrap}
+.quick-status svg{color:var(--teal)}
+.quick-entry-body{display:flex;gap:10px;align-items:stretch}
+.quick-fields{display:flex;gap:10px;flex:1;min-width:0;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-color:var(--teal) var(--surface-alt);scrollbar-width:thin;padding:9px 3px 10px;scroll-padding-inline:3px}
+.quick-fields .form-field{flex:0 0 164px;gap:5px;min-width:0}
+.quick-fields .form-field.full-width{flex-basis:260px}
+.quick-fields .form-field>label{font-size:10px;line-height:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.quick-fields input,.quick-fields select,.quick-fields textarea{min-height:30px;height:30px;padding:5px 8px;font-size:12px;border-radius:5px}
+.quick-fields select{padding-right:22px}
+.quick-fields .direction-toggle{min-height:30px;height:30px;padding:5px 8px;border-radius:5px}
+.quick-fields textarea{resize:none;line-height:18px}
+.quick-fields .field-error{font-size:10px;margin:0;line-height:12px}
+.quick-submit{flex:0 0 152px;display:flex;flex-direction:column;justify-content:center;align-items:stretch;gap:5px;border-left:1px solid var(--border);padding-left:10px}
+.quick-submit .primary{padding:6px 9px;min-height:32px;font-size:11px}
+.quick-submit>span{font-size:10px;text-align:center;color:var(--muted)}
+.quick-hint{display:flex;align-items:center;gap:5px;color:var(--muted);font-size:9px;line-height:14px;min-height:14px}
+.quick-hint .quick-editing{color:var(--orange);margin-left:auto}
+.minimalist .toast{inset:auto 10px 3px auto;transform:none;max-width:calc(100% - 20px);padding:4px 8px;gap:6px;font-size:10px;border-radius:5px}
+.minimalist .toast button{font-size:16px;padding-left:4px}
+.minimalist .toast>svg{width:13px;height:13px}
+.minimalist .save-error{padding:5px 10px;margin:0;border-radius:0;font-size:10px;gap:8px}
+.minimalist .modal{padding:12px;max-height:calc(100vh - 8px);overflow:auto}
+.minimalist .modal-heading{margin-bottom:6px}
+.minimalist .modal-heading h2{font-size:15px}
+.minimalist .modal>p{font-size:11px;margin:6px 0}
+.minimalist .modal-actions{padding-top:8px;margin-top:8px}
+.minimalist .modal-actions button{min-height:28px;padding:5px 9px;font-size:11px}
+@media(max-width:900px){.quick-brand span,.quick-status{display:none}.quick-toolbar{gap:6px}.quick-drafts{flex:1}.quick-submit{flex-basis:135px}}
+@media(max-width:760px){.sidebar-bottom .appearance-controls{padding:0}.appearance-toggle{min-height:30px;font-size:10px}.quick-toolbar .appearance-toggle{gap:5px}.quick-hint{font-size:8px}}
+@media(max-width:530px){.quick-toolbar .appearance-toggle>span,.quick-brand{display:none}.quick-submit{flex-basis:118px}.quick-submit .primary{gap:4px;font-size:10px}}

@@ -28,8 +28,42 @@ async function main() {
     await page.getByRole('navigation').getByRole('button', { name: 'Daily journal', exact: true }).click()
     await page.getByLabel('Journal date', { exact: true }).fill('2026-09-01')
     await expect(page.getByLabel('Journal entry', { exact: true })).toHaveValue('Desktop SQLite restart check.\nA retained reflection.')
+    const windowState = () => app.evaluate(({ BrowserWindow, screen }) => {
+      const win = BrowserWindow.getAllWindows()[0]
+      return { bounds: win.getBounds(), minimum: win.getMinimumSize(), workArea: screen.getDisplayMatching(win.getBounds()).workArea }
+    })
+    const full = await windowState()
+    await page.getByRole('button', { name: 'Enable minimalist mode' }).click()
+    await expect(page.locator('.quick-status')).toHaveText('Saved locally')
+    await expect.poll(async () => (await windowState()).bounds.height).toBe(190)
+    const compact = await windowState()
+    assert.deepEqual(compact.minimum, [640, 180])
+    assert.equal(compact.bounds.width, compact.workArea.width)
+    assert.equal(compact.bounds.y + compact.bounds.height, compact.workArea.y + compact.workArea.height)
+    await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].setSize(640, 180))
+    assert.equal(await page.evaluate(() => document.documentElement.scrollHeight <= innerHeight && document.documentElement.scrollWidth <= innerWidth), true)
+    await page.locator('#field-contract').fill('mnq')
+    await page.getByRole('button', { name: 'Exit minimalist mode' }).click()
+    await expect.poll(async () => (await windowState()).bounds).toEqual(full.bounds)
+    await expect(page.locator('#field-contract')).toHaveValue('MNQ')
+    await page.getByRole('button', { name: 'Save unfinished trade' }).click()
+    await page.getByRole('button', { name: 'Enable minimalist mode' }).click()
+    await expect(page.locator('.quick-status')).toHaveText('Saved locally')
+    const badMode = await page.evaluate(async () => {
+      try { await window.journalAPI.setMinimalist('yes'); return false } catch { return true }
+    })
+    assert.equal(badMode, true, 'Window bridge rejects non-boolean arguments')
+    const iconValid = await app.evaluate(({ nativeImage, app }) => {
+      return !nativeImage.createFromPath(app.getAppPath() + '/dist/turbo.ico').isEmpty()
+    })
+    assert.equal(iconValid, true, 'Windows icon can be decoded by Electron')
+    await app.close(); app = await launch(); page = await app.firstWindow()
+    await expect(page.getByRole('form', { name: 'Minimalist trade entry' })).toBeVisible()
+    await expect.poll(async () => (await windowState()).bounds.height).toBe(190)
+    await expect(page.getByLabel('Resume unfinished trade')).toContainText('1 unfinished')
+    await page.getByRole('button', { name: 'Exit minimalist mode' }).click()
     assert.deepEqual(errors, [])
-    console.log('PASS: Electron bridge, SQLite saves, 64 trades and daily journal survive a full app restart.')
+    console.log('PASS: Electron bridge, SQLite persistence, compact docking, minimum height, bounds restoration, saved mode after restart, and Windows icon.')
     console.log('Isolated test profile:', directory)
   } finally { await app?.close() }
 }

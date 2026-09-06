@@ -1,6 +1,6 @@
 import { initialData, parseBackup, type JournalData } from './model.ts'
 declare global {
-  interface Window { journalAPI?: { load: () => Promise<JournalData>; save: (data: JournalData) => Promise<void> } }
+  interface Window { journalAPI?: { load: () => Promise<JournalData>; save: (data: JournalData) => Promise<void>; setMinimalist: (enabled: boolean) => Promise<void>; appInfo: () => Promise<{ version: string; dataDirectory: string; packaged: boolean }>; openDataFolder: () => Promise<void> } }
 }
 let database: Promise<IDBDatabase> | undefined
 function browserDb() {

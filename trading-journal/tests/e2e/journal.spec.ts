@@ -5,7 +5,7 @@ async function essentials(page: Page) {
   await page.locator('#field-date').fill('2026-09-01')
   await page.locator('#field-timeIn').fill('09:30')
   await page.locator('#field-timeOut').fill('10:00')
-  await page.locator('#field-direction').selectOption('LONG')
+  await expect(page.locator('#field-direction')).toHaveText('LONG')
   await page.locator('#field-contract').fill('ES')
   await page.locator('#field-size').fill('1')
   await page.locator('#field-pnl').fill('0')

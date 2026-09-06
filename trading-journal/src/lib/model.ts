@@ -9,7 +9,7 @@ export interface Trade { id: string; values: Values; createdAt: string; updatedA
 export interface JournalEntry { text: string; updatedAt: string }
 export interface JournalData {
   version: 1; fields: Field[]; trades: Trade[]; journals: Record<string, JournalEntry>
-  theme: 'dark' | 'light'; currency: string
+  theme: 'dark' | 'light'; currency: string; minimalist?: boolean
 }
 export const numericTypes: FieldType[] = ['decimal', 'integer', 'percent', 'score']
 export const isNumeric = (field: Field) => numericTypes.includes(field.type)
@@ -133,6 +133,7 @@ export function parseBackup(input: unknown): JournalData {
     if (!validDate(date) || !entry || typeof entry.text !== 'string' || typeof entry.updatedAt !== 'string') throw new Error('Backup contains an invalid journal entry.')
   }
   if (!['dark', 'light'].includes(d.theme) || !['USD', 'EUR', 'GBP', 'CAD', 'AUD', 'JPY'].includes(d.currency)) throw new Error('Backup contains invalid display settings.')
+  if (d.minimalist !== undefined && typeof d.minimalist !== 'boolean') throw new Error('Backup contains an invalid layout setting.')
   return normalizeCharacteristics(d)
 }
 

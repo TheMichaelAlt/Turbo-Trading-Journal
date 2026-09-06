@@ -1,14 +1,17 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Activity, ArrowUpRight, BookOpen, CheckCircle2, Database, LayoutDashboard, Moon, Plus, Settings, Sun } from 'lucide-react'
+import { Activity, ArrowUpRight, BookOpen, CheckCircle2, Database, LayoutDashboard, Plus, Settings } from 'lucide-react'
 import Dashboard from './components/Dashboard'
 import TurboIcon from './components/TurboIcon'
 import TradeEntry from './components/TradeEntry'
+import AppearanceControls from './components/AppearanceControls'
+import './components/Minimalist.css'
 import TradeTable from './components/TradeTable'
 import DailyJournal from './components/DailyJournal'
 import Preferences from './components/Preferences'
 import { isComplete, learnOptions, normalizeValues, normalizeCharacteristics, type JournalData, type Trade, type Values } from './lib/model'
 import { loadData, saveData, storageMode } from './lib/storage'
 import { addDemo } from './lib/demo'
+import { APP_VERSION } from './lib/version'
 type Page = 'dashboard' | 'entry' | 'master' | 'journal' | 'settings'
 const pages: { id: Page; name: string; icon: typeof Activity }[] = [{ id: 'dashboard', name: 'Dashboard', icon: LayoutDashboard }, { id: 'entry', name: 'Trade log', icon: Plus }, { id: 'master', name: 'Master trade log', icon: Database }, { id: 'journal', name: 'Daily journal', icon: BookOpen }, { id: 'settings', name: 'Settings', icon: Settings }]
 export default function App() {
@@ -19,6 +22,11 @@ export default function App() {
   const notify = useCallback((message: string) => setToast(message), [])
   useEffect(() => { let active = true; loadData().then(value => { if (active) { dataRef.current = value; setData(value) } }).catch(e => { if (active) setLoadError(e instanceof Error ? e.message : 'Could not load your data.') }); return () => { active = false } }, [])
   useEffect(() => { if (data) document.documentElement.dataset.theme = data.theme }, [data])
+  const minimalist = !!data?.minimalist
+  useEffect(() => {
+    if (minimalist) setPage('entry')
+    void window.journalAPI?.setMinimalist(minimalist).catch(() => notify('The window could not be resized. You can resize it manually.'))
+  }, [minimalist, notify])
   useEffect(() => { if (!toast) return; const timer = setTimeout(() => setToast(''), 4500); return () => clearTimeout(timer) }, [toast])
   useEffect(() => {
     const guard = (e: BeforeUnloadEvent) => { if (dirty.current || pending.current || saveFailed.current) { e.preventDefault(); e.returnValue = '' } }
@@ -55,15 +63,18 @@ export default function App() {
   if (loadError) return <div className="boot-screen"><TurboIcon size={40} /><h1>Your data couldn’t be opened.</h1><p>{loadError}</p><p>Existing storage has been left untouched.</p><button className="primary" onClick={() => location.reload()}>Try again</button></div>
   if (!data) return <div className="boot-screen"><TurboIcon size={40} /><h1>Starting Turbo Journal…</h1></div>
   const drafts = data.trades.filter(t => !isComplete(t, data.fields)).length
-  return <div className="app-shell"><aside className="sidebar"><button className="brand" onClick={() => navigate('dashboard')} aria-label="Turbo Journal home"><span className="brand-mark"><TurboIcon size={29} /></span><span><strong>TURBO<span>↗</span></strong><small>TRADING JOURNAL</small></span></button><div className="sidebar-caption">YOUR TRADING WORKSPACE</div><nav aria-label="Main navigation">{pages.map(({ id, name, icon: Icon }) => <button key={id} className={`nav-link ${page === id ? 'active' : ''}`} aria-current={page === id ? 'page' : undefined} onClick={() => navigate(id)}><Icon size={19} /><span>{name}</span>{id === 'entry' && drafts > 0 && <b>{drafts}</b>}</button>)}</nav><div className="sidebar-bottom"><div className="sidebar-note"><span className="eyebrow">LESS GUESSWORK.</span><strong>More perspective.</strong><p>Your process is your edge.<br />Make every trade count.</p><ArrowUpRight size={27} /></div><button className="theme-toggle" onClick={() => { void update(current => ({ ...current, theme: current.theme === 'dark' ? 'light' : 'dark' })) }}>{data.theme === 'dark' ? <Sun size={17} /> : <Moon size={17} />}<span>{data.theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}</span><span className="theme-switch"><i /></span></button><div className="local-label"><span className="status-dot" />{storageMode()}</div></div></aside>
+  const appearance = <AppearanceControls theme={data.theme} minimalist={minimalist}
+    onTheme={() => { void update(current => ({ ...current, theme: current.theme === 'dark' ? 'light' : 'dark' })) }}
+    onMinimalist={() => { setPage('entry'); void update(current => ({ ...current, minimalist: !current.minimalist })) }} />
+  return <div className={`app-shell ${minimalist ? 'minimalist' : ''}`}><aside className="sidebar"><button className="brand" onClick={() => navigate('dashboard')} aria-label="Turbo Journal home"><span className="brand-mark"><TurboIcon size={29} /></span><span><strong>TURBO<span>↗</span></strong><small>TRADING JOURNAL</small></span></button><div className="sidebar-caption">YOUR TRADING WORKSPACE</div><nav aria-label="Main navigation">{pages.map(({ id, name, icon: Icon }) => <button key={id} className={`nav-link ${page === id ? 'active' : ''}`} aria-current={page === id ? 'page' : undefined} onClick={() => navigate(id)}><Icon size={19} /><span>{name}</span>{id === 'entry' && drafts > 0 && <b>{drafts}</b>}</button>)}</nav><div className="sidebar-bottom"><div className="sidebar-note"><span className="eyebrow">LESS GUESSWORK.</span><strong>More perspective.</strong><p>Your process is your edge.<br />Make every trade count.</p><ArrowUpRight size={27} /></div>{appearance}<div className="local-label"><span className="status-dot" />{storageMode()}</div></div></aside>
     <div className="workspace"><header className="topbar"><div className="breadcrumb">Workspace <span>/</span> <strong>{pages.find(p => p.id === page)?.name}</strong></div><div className="topbar-right"><span className={`save-status ${status === 'error' ? 'negative' : ''}`} role="status"><CheckCircle2 size={14} />{status === 'saving' ? 'Saving…' : status === 'error' ? 'Unsaved changes' : 'Saved locally'}</span><span className="version-pill">YOUR EDGE, DECODED</span></div></header>
     <main>{saveError && <div className="save-error" role="alert"><strong>Changes are in memory but haven’t been saved.</strong><span>{saveError}</span><button className="secondary compact" onClick={() => { void update(current => ({ ...current })) }}>Retry save</button></div>}
       {page === 'dashboard' && <Dashboard data={data} onNew={newTrade} onDemo={() => { void demo() }} />}
-      {page === 'entry' && <TradeEntry key={formKey} data={data} editing={editing} onEdit={editTrade} onSave={saveTrade} onDelete={deleteTrade} onCancel={newTrade} onDirty={onDirty} />}
+      {page === 'entry' && <TradeEntry key={formKey} data={data} editing={editing} onEdit={editTrade} onSave={saveTrade} onDelete={deleteTrade} onCancel={newTrade} onDirty={onDirty} minimalist={minimalist} appearance={appearance} status={status} />}
       {page === 'master' && <TradeTable data={data} onEdit={editTrade} onDelete={deleteTrade} onNew={newTrade} />}
       {page === 'journal' && <DailyJournal data={data} status={status} onChange={(date, text) => { void update(current => ({ ...current, journals: { ...current.journals, [date]: { text, updatedAt: new Date().toISOString() } } })) }} />}
       {page === 'settings' && <Preferences data={data} update={update} onDemo={() => { void demo() }} notify={notify} />}
-      <footer className="app-footer"><span>TURBO JOURNAL</span><span>Reflect. Refine. Repeat.</span><span>LOCAL FIRST · V1.0</span></footer>
+      <footer className="app-footer"><span>TURBO JOURNAL</span><span>Reflect. Refine. Repeat.</span><span>LOCAL FIRST · V{APP_VERSION}</span></footer>
     </main></div>{toast && <div className="toast" role="status"><CheckCircle2 size={18} />{toast}<button aria-label="Dismiss notification" onClick={() => setToast('')}>×</button></div>}
   </div>
 }

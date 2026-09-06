@@ -4,14 +4,23 @@ A local trading workspace with customizable trade characteristics, automatic com
 
 ## Run locally
 
+For a ready-to-install Windows app, use the Setup.exe in `release/1.0.0/`.
+Your friend needs only that file. It includes the runtime and starts an empty
+journal on their PC. See `INSTALL-AND-UPDATE.txt` beside the installer and
+[RELEASING.md](RELEASING.md) for future releases. Upgrades use a newer installer
+over the current installation; completed trades, drafts, characteristics, and
+journal pages stay in the same user-data folder.
+
 Requires Node.js 24 or newer. From `trading-journal`:
 
 ```powershell
 npm install
-npm run dev
+npm start
 ```
 
-`npm run dev` opens the desktop app. For a browser-only preview:
+`npm start` builds the latest version and opens the desktop app independently of the terminal or development server. On Windows, you can also double-click **Start Turbo Journal.cmd** in the parent project folder.
+
+For development with live updates, use `npm run dev` and leave that terminal open. For a browser-only preview:
 
 ```powershell
 npm run dev:web
@@ -29,10 +38,15 @@ Open http://127.0.0.1:5173. Both commands use the same port, so run one at a tim
 6. On **Daily journal**, choose a date and write. Edits save automatically; use the arrows, date picker, or saved pages to browse. There is no application-imposed text length limit.
 7. Browse the dashboard's **Trading calendar** by month to see each day's net PnL, completed trade count, win rate, and strategies used. It respects all dashboard filters. Select a trading day for full details. Trades without PnL count toward the trade total but are excluded from PnL and win rate.
 8. Switch between **Midnight drive** (dark) and **Race day** (light) using the sidebar or Settings. Both use teal and racing orange, with a turbocharger emblem.
+9. Choose **Minimalist** beside the theme button to enter trades in a short horizontal strip. On desktop it docks above the taskbar and can shrink to 180 pixels tall, including the Windows title bar. Scroll the characteristics with the mouse wheel, trackpad, scrollbar, or Tab key. Save stays visible, and the unfinished-trade dropdown resumes entries. **Full mode** restores the previous window size without clearing trade edits. Your mode preference survives a restart; save a trade before closing to retain the entered values.
+
+The Windows title bar, taskbar, and installer use the orange-and-teal turbo icon. Its vector source is `public/turbo.svg`; run `node scripts/generate-icons.mjs` with Microsoft Edge installed to regenerate the PNG and multi-resolution ICO assets.
 
 ## Defaults and completion
 
 Required: date, time entered, time exited, long/short, contract, position size, PnL, account, and strategy.
+
+The Long / short button starts at **LONG** on a new trade. Click it (or press Space when focused) to toggle to **SHORT**. Editing an existing trade preserves its saved direction.
 
 Optional: stop loss and take profit in points, confidence and execution scores (1–5), notes, DD ratio (%), MHP/HP/HG resilience (−150 to +150 with decimals), and setup grade.
 
@@ -51,7 +65,7 @@ Completion is derived from current settings, rather than a stored flag. Adding a
 
 ## Storage and migration
 
-The desktop app uses Electron's bundled `node:sqlite`, with WAL and full synchronous writes. No separately compiled SQLite addon is required. Its database is `trading_journal.db` in Electron's user-data directory (normally `%APPDATA%\trading-journal` during development).
+The desktop app uses Electron's bundled `node:sqlite`, with WAL and full synchronous writes. No separately compiled SQLite addon is required. Its database is `trading_journal.db` in `%APPDATA%\trading-journal` on Windows. This directory is fixed for both development and installed builds, independently of the application name, version, or installation folder. A different app version creates a consistent SQLite snapshot in its `backups` subfolder before opening existing data. Settings shows the installed version and can open the data folder.
 
 On the first run, the app imports the starter's existing `trades` and `custom_attributes` data into the new `journal_state` table in the same database. Original tables are retained, and this migration only runs once. Existing records are evaluated against the new completion rules.
 
@@ -65,9 +79,11 @@ Save errors are shown explicitly with a retry button. The app guards against lea
 npm run build        # Type-check and build renderer + Electron main/preload
 npm run lint         # ESLint with no warnings permitted
 npm test             # Model, analytics, SQLite persistence and migration tests
-npm run test:e2e      # Nine browser workflow tests using installed Microsoft Edge
-npm run test:desktop  # Build and verify Electron persistence across full restarts
-npm run dist         # Build an installable desktop package with electron-builder
+npm run test:e2e      # Browser workflows, including the compact strip, using Microsoft Edge
+npm run test:desktop  # Verify persistence, full restarts, and server-independent startup
+npm run dist:win     # Build the Windows installer, sharing guide, and checksum
+npm run test:release # Test the packaged app with an isolated data profile
+npm run test:upgrade # Install/upgrade two isolated fixtures and verify data survives
 ```
 
 For browser tests on a machine without Edge, change the Playwright channel in `playwright.config.ts` or install Playwright Chromium. Automated tests use isolated browser contexts and temporary desktop profiles; they do not edit your actual journal. Desktop test profiles remain in the operating system's temporary folder for inspection. Installer packaging is a separate step from the development build.
