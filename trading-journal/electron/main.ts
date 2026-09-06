@@ -23,6 +23,7 @@ function createWindow() {
   if (devUrl) void win.loadURL(devUrl)
   else void win.loadFile(path.join(directory, '../dist/index.html'))
 }
+
 if (!app.requestSingleInstanceLock()) app.quit()
 else {
   app.on('second-instance', () => { if (win?.isMinimized()) win.restore(); win?.focus() })
