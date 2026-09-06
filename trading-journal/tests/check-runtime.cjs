@@ -1,0 +1,5 @@
+console.log('Electron runtime Node:', process.versions.node)
+const { DatabaseSync } = require('node:sqlite')
+const db = new DatabaseSync(':memory:')
+console.log('Built-in SQLite:', db.prepare('SELECT sqlite_version() AS version').get())
+db.close()

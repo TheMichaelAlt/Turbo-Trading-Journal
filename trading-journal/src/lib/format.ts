@@ -1,0 +1,2 @@
+export const money = (value: number, currency = 'USD', compact = false) => new Intl.NumberFormat(undefined, { style: 'currency', currency, maximumFractionDigits: compact ? 0 : 2, notation: compact && Math.abs(value) >= 100000 ? 'compact' : 'standard' }).format(value)
+export const number = (value: number | null, digits = 2) => value === null ? '—' : value === Infinity ? '∞' : value.toLocaleString(undefined, { maximumFractionDigits: digits })
