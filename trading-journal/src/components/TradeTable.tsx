@@ -7,8 +7,11 @@ import { Empty, FilterBar, Modal } from './ui'
 import { pnlUnit } from '../lib/pnl'
 import { money, number } from '../lib/format'
 import TradeNotes from './TradeNotes'
-export default function TradeTable({ data, onEdit, onDelete, onNew }: { data: JournalData; onEdit: (t: Trade) => void; onDelete: (id: string) => Promise<boolean>; onNew: () => void }) {
-  const [filters, setFilters] = useState(emptyFilters), [search, setSearch] = useState('')
+export default function TradeTable({ data, onEdit, onDelete, onNew, update }: { update: (change: (current: JournalData) => JournalData) => Promise<boolean>; data: JournalData; onEdit: (t: Trade) => void; onDelete: (id: string) => Promise<boolean>; onNew: () => void }) {
+  const filters = data.lastFilters?.master?.filters || emptyFilters(), search = data.lastFilters?.master?.search || ''
+  const setFilters = (filters: ReturnType<typeof emptyFilters>) => { void update(current => ({ ...current, lastFilters: { ...current.lastFilters, master: { ...current.lastFilters?.master, filters } } })) }
+  const setSearch = (search: string) => { void update(current => ({ ...current, lastFilters: { ...current.lastFilters, master: { filters: current.lastFilters?.master?.filters || emptyFilters(), search } } })) }
+
   const [columns, setColumns] = useState<string[] | null>(null)
   const [columnOpen, setColumnOpen] = useState(false), [deleting, setDeleting] = useState<Trade | null>(null), [busy, setBusy] = useState(false)
   const [sort, setSort] = useState<{ id: string; desc: boolean }>({ id: 'date', desc: true }), [page, setPage] = useState(0)

@@ -72,7 +72,7 @@ export default function App() {
     <main>{saveError && <div className="save-error" role="alert"><strong>Changes are in memory but haven’t been saved.</strong><span>{saveError}</span><button className="secondary compact" onClick={() => { void update(current => ({ ...current })) }}>Retry save</button></div>}
       {page === 'dashboard' && <Dashboard update={update} data={data} onNew={newTrade} onDemo={() => { void demo() }} />}
       {page === 'entry' && <TradeEntry key={formKey} data={data} editing={editing} onEdit={editTrade} onSave={saveTrade} onDelete={deleteTrade} onCancel={newTrade} onDirty={onDirty} minimalist={minimalist} appearance={appearance} status={status} />}
-      {page === 'master' && <TradeTable data={data} onEdit={editTrade} onDelete={deleteTrade} onNew={newTrade} />}
+      {page === 'master' && <TradeTable update={update} data={data} onEdit={editTrade} onDelete={deleteTrade} onNew={newTrade} />}
       {page === 'journal' && <DailyJournal data={data} status={status} onChange={(date, text) => { void update(current => ({ ...current, journals: { ...current.journals, [date]: { text, updatedAt: new Date().toISOString() } } })) }} />}
       {page === 'import' && <ImportTrades data={data} update={update} notify={notify} onDirty={onDirty} />}
       {page === 'settings' && <Preferences data={data} update={update} onDemo={() => { void demo() }} notify={notify} />}

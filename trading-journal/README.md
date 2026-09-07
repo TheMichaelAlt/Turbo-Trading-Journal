@@ -4,7 +4,7 @@ A local trading workspace with customizable trade characteristics, automatic com
 
 ## Run locally
 
-For a ready-to-install Windows app, use the Setup.exe in `release/1.2.0/`.
+For a ready-to-install Windows app, use the Setup.exe in `release/1.2.3/`.
 Your friend needs only that file. It includes the runtime and starts an empty
 journal on their PC. See `INSTALL-AND-UPDATE.txt` beside the installer and
 [RELEASING.md](RELEASING.md) for future releases. Upgrades use a newer installer
@@ -120,3 +120,11 @@ Settings has an **Automated characteristics** section with separate enabled, fil
 Ratios backfill automatically for existing trades and recalculate when inputs or multipliers change. A missing or zero stop, missing initial size, or unknown required conversion leaves the corresponding result blank. Use original stop distance and initial position size when scaling out. Disabling an automated characteristic hides it from entry and default master columns while retaining historical values through the Columns picker. They are read-only and never required to complete a trade.
 
 Contract multipliers can be added or overridden in Settings. Defaults cover MNQ/NQ, MES/ES, M2K/RTY, MYM/YM, MCL/CL, and MGC/GC. Root, dated (MNQU26), and common continuous (@MNQ, MNQ1!) symbols are recognized case-insensitively; exact custom symbols take priority. These are USD per full point, not per tick. Currency labels do not perform FX conversion. Sources: [CME equity index specifications](https://www.cmegroup.com/articles/faqs/frequently-asked-questions-micro-e-mini-equity-index-futures.html), [CME WTI specifications](https://www.cmegroup.com/education/articles-and-reports/micro-wti-crude-oil-futures-faq), [CME gold specifications](https://www.cmegroup.com/education/lessons/product-gold).
+
+## Color themes
+
+Dark mode retains the midnight blue-teal background with teal and orange panel outlines. Light mode uses the reference teal blue (#01889F), mostly lavender panel outlines, and orange accents, with very little white. Both apply throughout the app and minimalist mode.
+
+## Remembered filters
+
+Dashboard and master trade log filters automatically stay at their last-used settings, independently for each page. Date ranges, characteristic rules, and master-log search text are saved locally with the journal and included in backups. They survive page changes, app restarts, and updates. Reset filters clears the remembered rules and dates for that page; clear the search box separately. There are no presets or profiles to manage. Date ranges remain the exact dates you selected.
