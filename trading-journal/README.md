@@ -4,7 +4,7 @@ A local trading workspace with customizable trade characteristics, automatic com
 
 ## Run locally
 
-For a ready-to-install Windows app, use the Setup.exe in `release/1.1.0/`.
+For a ready-to-install Windows app, use the Setup.exe in `release/1.2.0/`.
 Your friend needs only that file. It includes the runtime and starts an empty
 journal on their PC. See `INSTALL-AND-UPDATE.txt` beside the installer and
 [RELEASING.md](RELEASING.md) for future releases. Upgrades use a newer installer
@@ -105,3 +105,18 @@ Select the source date and number formats. Use separate date and time columns; I
 Review the preview, edit cells, and uncheck unwanted rows. Invalid values block importing selected rows until corrected. Missing required fields are allowed and create unfinished trades. Exact duplicates (all nonblank values match) are skipped by default; turn that off to keep intentionally identical trades. Notes preserve their original case and line breaks; other text is capitalized. Existing trades and historical characteristics are retained.
 
 The final **Import trades** button saves the selected trades and any new characteristics together. If saving fails, **Retry import** safely retries the same batch. Files are processed locally, with limits of 10 MB, 10,000 trades and 200 columns. UTF-8 CSVs and BOM-marked UTF-16 files are supported, with comma, semicolon or tab separators and quoted multiline cells.
+
+## Dollars, points, and automated RR
+
+Choose **PnL unit** on trade entry (including minimalist mode), or map that column in a CSV import. Existing trades and CSVs without a unit remain dollar entries. Point PnL is the **total across contracts**: closing two contracts for +10 points and one for +5 points produces +25 points. Dollar PnL = total point PnL times the contract multiplier; position size is not multiplied again. Include any fees in the entered net result if desired.
+
+The dashboard selector displays **Dollars**, **Points**, or **Both**, and persists in Settings. Both shows a complete analysis in each unit with shared trade filters. Unknown conversions are explicitly excluded until a multiplier is configured. Original amounts, units, and timestamps are retained. Master-log PnL displays the recorded unit.
+
+Settings has an **Automated characteristics** section with separate enabled, filter, and analyze switches:
+
+- **Trade RR** = target distance / stop distance.
+- **Realized RR** = point PnL / (stop distance times initial position size), equivalent to dollar PnL / initial dollar risk.
+
+Ratios backfill automatically for existing trades and recalculate when inputs or multipliers change. A missing or zero stop, missing initial size, or unknown required conversion leaves the corresponding result blank. Use original stop distance and initial position size when scaling out. Disabling an automated characteristic hides it from entry and default master columns while retaining historical values through the Columns picker. They are read-only and never required to complete a trade.
+
+Contract multipliers can be added or overridden in Settings. Defaults cover MNQ/NQ, MES/ES, M2K/RTY, MYM/YM, MCL/CL, and MGC/GC. Root, dated (MNQU26), and common continuous (@MNQ, MNQ1!) symbols are recognized case-insensitively; exact custom symbols take priority. These are USD per full point, not per tick. Currency labels do not perform FX conversion. Sources: [CME equity index specifications](https://www.cmegroup.com/articles/faqs/frequently-asked-questions-micro-e-mini-equity-index-futures.html), [CME WTI specifications](https://www.cmegroup.com/education/articles-and-reports/micro-wti-crude-oil-futures-faq), [CME gold specifications](https://www.cmegroup.com/education/lessons/product-gold).

@@ -1,3 +1,4 @@
+import { calculatedValues, type PnlDisplay } from './pnl.ts'
 export type FieldType = 'text' | 'decimal' | 'integer' | 'percent' | 'score' | 'date' | 'time'
 export type Value = string | number
 export type Values = Record<string, Value>
@@ -9,7 +10,7 @@ export interface Trade { id: string; values: Values; createdAt: string; updatedA
 export interface JournalEntry { text: string; updatedAt: string }
 export interface JournalData {
   version: 1; fields: Field[]; trades: Trade[]; journals: Record<string, JournalEntry>
-  theme: 'dark' | 'light'; currency: string; minimalist?: boolean
+  theme: 'dark' | 'light'; currency: string; minimalist?: boolean; pnlDisplay?: PnlDisplay; contractMultipliers?: Record<string, number>
 }
 export const numericTypes: FieldType[] = ['decimal', 'integer', 'percent', 'score']
 export const isNumeric = (field: Field) => numericTypes.includes(field.type)
@@ -34,6 +35,9 @@ export function defaultFields(): Field[] {
     field('contract', 'Contract', 'text', true, { options: ['ES', 'NQ', 'MES', 'MNQ', 'RTY', 'YM', 'CL', 'GC', 'BTC', 'ETH'] }),
     field('size', 'Position size', 'decimal', true, { min: 0.00000001 }),
     field('pnl', 'PnL', 'decimal', true, { analyze: false }),
+    field('pnlUnit', 'PnL unit', 'text', false, { options: ['DOLLARS', 'POINTS'], analyze: false }),
+    field('tradeRR', 'Trade RR', 'decimal', false),
+    field('realizedRR', 'Realized RR', 'decimal', false),
     field('account', 'Account', 'text', true, { options: ['Sim', 'Live', 'Funded'] }),
     field('strategy', 'Strategy', 'text', true, { options: ['Breakout', 'Pullback', 'Reversal', 'Trend continuation'] }),
     field('stopLoss', 'Stop loss (points)', 'decimal', false, { min: 0 }),
@@ -53,6 +57,7 @@ export const today = () => {
   const date = new Date()
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
 }
+export const isCalculated = (field: Field) => field.builtin === true && ['tradeRR', 'realizedRR'].includes(field.id)
 export const activeFields = (fields: Field[]) => fields.filter(f => !f.archived)
 // Keep every recorded column discoverable, even in older imports whose field
 // definitions are missing. Removed definitions normally remain as archived fields.
@@ -87,9 +92,10 @@ export function fieldError(field: Field, value: unknown): string | undefined {
   }
   if (field.type === 'date' && !validDate(String(value))) return 'Enter a valid date'
   if (field.type === 'time' && !/^([01]\d|2[0-3]):[0-5]\d(:[0-5]\d)?$/.test(String(value))) return 'Enter a valid time'
+  if (field.id === 'pnlUnit' && !['DOLLARS', 'POINTS'].includes(canonicalText(value))) return 'Select DOLLARS or POINTS'
   if (field.id === 'direction' && !['LONG', 'SHORT'].includes(canonicalText(value))) return 'Select LONG or SHORT'
 }
-export const tradeIssues = (values: Values, fields: Field[]) => activeFields(fields).flatMap(f => {
+export const tradeIssues = (values: Values, fields: Field[]) => activeFields(fields).filter(f => !isCalculated(f)).flatMap(f => {
   const error = fieldError(f, values[f.id])
   return error ? [{ field: f, error }] : []
 })
@@ -107,7 +113,8 @@ export function learnOptions(fields: Field[], values: Values): Field[] {
 // Apply the same rules to saved trades, old backups, archived characteristics, and fresh entries.
 // IDs, numbers, timestamps, notes, and daily journal writing are left intact.
 export function normalizeCharacteristics(data: JournalData): JournalData {
-  const fields = data.fields.map(normalizeField)
+  const added = defaultFields().filter(f => ['pnlUnit', 'tradeRR', 'realizedRR'].includes(f.id) && !data.fields.some(old => old.id === f.id)).map(f => ({ ...f, name: data.fields.some(old => old.name.toLowerCase() === f.name.toLowerCase()) ? f.name + ' (automatic)' : f.name }))
+  const fields = [...data.fields, ...added].map(normalizeField)
   const textFields = fields.filter(isTextCharacteristic)
   const trades = data.trades.map(trade => {
     const changes = textFields.flatMap(f => {
@@ -116,9 +123,10 @@ export function normalizeCharacteristics(data: JournalData): JournalData {
       const normalized = canonicalText(value)
       return normalized === value ? [] : [[f.id, normalized] as const]
     })
-    return changes.length ? { ...trade, values: { ...trade.values, ...Object.fromEntries(changes) } } : trade
+    const values = calculatedValues({ ...trade.values, ...Object.fromEntries(changes) }, data.contractMultipliers)
+    return changes.length || values.tradeRR !== trade.values.tradeRR || values.realizedRR !== trade.values.realizedRR ? { ...trade, values } : trade
   })
-  return fields.every((f, i) => f === data.fields[i]) && trades.every((t, i) => t === data.trades[i]) ? data : { ...data, fields, trades }
+  return fields.length === data.fields.length && fields.every((f, i) => f === data.fields[i]) && trades.every((t, i) => t === data.trades[i]) ? data : { ...data, fields, trades }
 }
 export function validateField(field: Field, fields: Field[]): string | undefined {
   if (!field.name.trim()) return 'Give this characteristic a name.'
@@ -140,6 +148,7 @@ export function parseBackup(input: unknown): JournalData {
   }
   for (const f of defaultFields()) {
     const actual = d.fields.find(item => item.id === f.id)
+    if (!actual && ['pnlUnit', 'tradeRR', 'realizedRR'].includes(f.id)) continue
     if (!actual || actual.type !== f.type || actual.builtin !== true) throw new Error('Backup is missing a default characteristic or has changed its type.')
   }
   unique.clear()
@@ -152,6 +161,8 @@ export function parseBackup(input: unknown): JournalData {
   }
   if (!['dark', 'light'].includes(d.theme) || !['USD', 'EUR', 'GBP', 'CAD', 'AUD', 'JPY'].includes(d.currency)) throw new Error('Backup contains invalid display settings.')
   if (d.minimalist !== undefined && typeof d.minimalist !== 'boolean') throw new Error('Backup contains an invalid layout setting.')
+  if (d.pnlDisplay !== undefined && !['dollars', 'points', 'both'].includes(d.pnlDisplay)) throw new Error('Invalid PnL display setting.')
+  if (d.contractMultipliers !== undefined && (!d.contractMultipliers || typeof d.contractMultipliers !== 'object' || Array.isArray(d.contractMultipliers) || Object.entries(d.contractMultipliers).some(([key, value]) => !key.trim() || key !== key.trim().toUpperCase() || ['__PROTO__', 'CONSTRUCTOR', 'PROTOTYPE'].includes(key) || typeof value !== 'number' || !Number.isFinite(value) || value <= 0))) throw new Error('Invalid contract multipliers.')
   return normalizeCharacteristics(d)
 }
 

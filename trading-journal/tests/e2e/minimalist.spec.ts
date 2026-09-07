@@ -78,7 +78,7 @@ test('short strip scrolls by wheel and keyboard, validates offscreen fields and 
   await expect(page.locator('#field-direction')).toHaveText('SHORT')
   await page.locator('#field-direction').press('Space')
   await expect(page.locator('#field-direction')).toHaveText('LONG')
-  await expect(row.locator('.form-field')).toHaveCount(19)
+  await expect(row.locator('.form-field')).toHaveCount(22)
   await row.hover()
   await page.mouse.wheel(0, 700)
   await expect.poll(() => row.evaluate(el => el.scrollLeft)).toBeGreaterThan(0)

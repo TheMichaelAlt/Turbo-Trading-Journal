@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { activeFields, type Field, type JournalData, type Trade } from '../lib/model'
+import { activeFields, isCalculated, type Field, type JournalData, type Trade } from '../lib/model'
 import { applyImport, defaultImportOptions, parseCsv, previewImport, suggestMappings, type CsvData } from '../lib/csvImport'
 import FieldEditor from './FieldEditor'
 import './ImportTrades.css'
@@ -13,7 +13,7 @@ export default function ImportTrades({ data, update, notify, onDirty }: { data: 
   const [batch, setBatch] = useState<{ fields: Field[]; trades: Trade[]; message: string } | null>(null)
   const fileInput = useRef<HTMLInputElement>(null)
   const fields = useMemo(() => [...data.fields, ...custom.filter(f => !data.fields.some(saved => saved.id === f.id))], [data.fields, custom])
-  const active = activeFields(fields)
+  const active = activeFields(fields).filter(f => !isCalculated(f))
   const preview = useMemo(() => {
     try { return { rows: csv ? previewImport(csv, mappings, fields, data.trades, options, ids, excluded, defaults, corrections) : [], error: '' } }
     catch (e) { return { rows: [], error: (e as Error).message } }
@@ -69,7 +69,7 @@ export default function ImportTrades({ data, update, notify, onDirty }: { data: 
           {custom.map(f => <div className="import-custom" key={f.id}><span>New: <strong>{f.name}</strong> · {f.type}{f.required && ' · required'}</span><button className="secondary compact" onClick={() => setEditor({ field: f })}>Edit {f.name}</button><button className="secondary compact" onClick={() => { setCustom(custom.filter(c => c.id !== f.id)); setMappings(mappings.map(id => id === f.id ? '' : id)) }}>Remove {f.name}</button></div>)}
           <div className="import-controls"><label>Source date format<select value={options.dateOrder} onChange={e => setOptions({ ...options, dateOrder: e.target.value as typeof options.dateOrder })}><option value="ymd">Year / month / day</option><option value="mdy">Month / day / year</option><option value="dmy">Day / month / year</option></select></label><label>Number format<select value={options.decimal} onChange={e => setOptions({ ...options, decimal: e.target.value as '.' | ',' })}><option value=".">1,234.56 (decimal point)</option><option value=",">1.234,56 (decimal comma)</option></select></label></div>
           <label className="check-label"><input type="checkbox" checked={options.fractionalPercent} onChange={e => setOptions({ ...options, fractionalPercent: e.target.checked })} />Percent values without a % sign are fractions (0.25 means 25%)</label>
-          <p className="help-text">ISO dates are always accepted. Use separate date and time columns. BUY / SELL become LONG / SHORT. Text is capitalized; notes keep their original wording. PnL must be in your journal currency; no currency conversion is performed.</p>
+          <p className="help-text">ISO dates are always accepted. Use separate date and time columns. BUY / SELL become LONG / SHORT. Text is capitalized; notes keep their original wording. PnL defaults to dollars. Map PnL unit or set its default below to POINTS for total point PnL. Automatic RR fields are calculated on save. No currency conversion is performed.</p>
           <details><summary>Defaults for unmapped characteristics</summary><p>Apply the same value to every row, such as an account or strategy. Leave blank to omit it.</p><div className="import-controls">{active.filter(f => !mappings.includes(f.id)).map(f => <label key={f.id}>{f.name}{f.required && ' *'}<input aria-label={`Default ${f.name}`} value={defaults[f.id] || ''} onChange={e => setDefaults({ ...defaults, [f.id]: e.target.value })} /></label>)}</div></details>
         </section>
         <section className="panel padded"><h2>3. Review trades</h2><p>Edit cells below to correct values. Preview edits use ISO dates, decimal points, and percent units (25 means 25%). Invalid values must be corrected or the row unchecked. Missing required values are allowed and go to the unfinished trade log.</p>

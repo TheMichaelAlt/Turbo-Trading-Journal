@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useId, useMemo, useState } from 'react'
 import { CalendarDays, ChevronLeft, ChevronRight } from 'lucide-react'
 import { today, type Trade } from '../lib/model'
 import { metrics } from '../lib/analytics'
@@ -11,6 +11,7 @@ const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const longDate = (date: string) => new Date(`${date}T12:00:00Z`).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
 
 export default function PerformanceCalendar({ trades, currency, focusMonth }: { trades: Trade[]; currency: string; focusMonth?: string }) {
+  const titleId = useId()
   const [month, setMonth] = useState(focusMonth || today().slice(0, 7))
   const [selected, setSelected] = useState<string | null>(null)
   useEffect(() => { if (focusMonth && validMonth(focusMonth)) setMonth(focusMonth) }, [focusMonth])
@@ -21,9 +22,9 @@ export default function PerformanceCalendar({ trades, currency, focusMonth }: { 
   const winRate = (stats: ReturnType<typeof metrics>) => stats.count ? `${number(stats.winRate, 1)}%` : '—'
   const pnl = (stats: ReturnType<typeof metrics>) => stats.count ? money(stats.net, currency) : '—'
 
-  return <section className="panel performance-calendar" aria-labelledby="calendar-title">
+  return <section className="panel performance-calendar" aria-labelledby={titleId}>
     <div className="panel-heading calendar-heading">
-      <div><h2 id="calendar-title"><CalendarDays size={18} />Trading calendar</h2><p>Daily stats from your filtered, completed trades. Select a trading day for details.</p></div>
+      <div><h2 id={titleId}><CalendarDays size={18} />Trading calendar</h2><p>Daily stats from your filtered, completed trades. Select a trading day for details.</p></div>
       <div className="calendar-controls">
         <button className="icon-button" aria-label="Previous month" disabled={month === '0001-01'} onClick={() => setMonth(shiftMonth(month, -1))}><ChevronLeft size={17} /></button>
         <input aria-label="Calendar month" type="month" min="0001-01" max="9999-12" value={month} onChange={e => { if (validMonth(e.target.value)) setMonth(e.target.value) }} />

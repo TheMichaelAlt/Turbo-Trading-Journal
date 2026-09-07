@@ -1,4 +1,4 @@
-import { activeFields, canonicalText, fieldError, isBlank, isNumeric, tradeIssues, validDate, type Field, type JournalData, type Trade, type Values } from './model.ts'
+import { activeFields, isCalculated, canonicalText, fieldError, isBlank, isNumeric, tradeIssues, validDate, type Field, type JournalData, type Trade, type Values } from './model.ts'
 
 export type DateOrder = 'ymd' | 'mdy' | 'dmy'
 export interface ImportOptions { dateOrder: DateOrder; decimal: '.' | ','; fractionalPercent: boolean; skipDuplicates: boolean }
@@ -54,7 +54,7 @@ export function suggestMappings(headers: string[], fields: Field[]): string[] {
   const used = new Set<string>()
   return headers.map(header => {
     const key = headerKey(header)
-    const candidates = activeFields(fields).filter(f => !used.has(f.id) && [f.name, f.id, ...(aliases[f.id] || [])].some(name => headerKey(name) === key))
+    const candidates = activeFields(fields).filter(f => !isCalculated(f) && !used.has(f.id) && [f.name, f.id, ...(aliases[f.id] || [])].some(name => headerKey(name) === key))
     if (candidates.length !== 1) return ''
     used.add(candidates[0].id)
     return candidates[0].id
@@ -100,6 +100,7 @@ export function convertImportValue(raw: string, field: Field, options: ImportOpt
     if (field.type === 'percent' && options.fractionalPercent && !explicitPercent) number = Number((number * 100).toPrecision(15))
     return Number.isFinite(number) ? number : text
   }
+  if (field.id === 'pnlUnit') return ['USD', '$', 'DOLLAR', 'DOLLARS'].includes(canonicalText(text)) ? 'DOLLARS' : ['PT', 'PTS', 'POINT', 'POINTS'].includes(canonicalText(text)) ? 'POINTS' : canonicalText(text)
   if (field.id === 'direction') {
     const value = canonicalText(text)
     return ['BUY', 'B', 'L', 'LONG'].includes(value) ? 'LONG' : ['SELL', 'S', 'SHORT'].includes(value) ? 'SHORT' : value
@@ -108,13 +109,13 @@ export function convertImportValue(raw: string, field: Field, options: ImportOpt
 }
 
 export function tradeFingerprint(values: Values): string {
-  return JSON.stringify(Object.entries(values).filter(([, value]) => !isBlank(value)).sort(([a], [b]) => a.localeCompare(b)))
+  return JSON.stringify(Object.entries(values).filter(([id, value]) => !['tradeRR', 'realizedRR'].includes(id) && !(id === 'pnlUnit' && String(value).toUpperCase() === 'DOLLARS') && !isBlank(value)).sort(([a], [b]) => a.localeCompare(b)))
 }
 export function previewImport(csv: CsvData, mappings: string[], fields: Field[], existing: Trade[], options: ImportOptions, ids: string[], excluded: Set<number>, defaults: Record<string, string>, corrections: Record<number, Record<string, string>>): ImportRow[] {
   const mapped = mappings.filter(Boolean)
   if (!mapped.length) return []
   if (new Set(mapped).size !== mapped.length) throw new Error('Each characteristic can be mapped to only one CSV column.')
-  const active = activeFields(fields), known = new Set(active.map(f => f.id))
+  const active = activeFields(fields).filter(f => !isCalculated(f)), known = new Set(active.map(f => f.id))
   if (mapped.some(id => !known.has(id))) throw new Error('A mapped characteristic is no longer active. Review the column mappings.')
   const seen = new Set(existing.map(t => tradeFingerprint(t.values)))
   return csv.rows.map((row, index) => {
