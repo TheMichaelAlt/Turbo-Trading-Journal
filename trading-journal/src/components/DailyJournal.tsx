@@ -5,11 +5,12 @@ import { pnlTrades } from '../lib/pnl'
 import { metrics } from '../lib/analytics'
 import { Modal } from './ui'
 import { money } from '../lib/format'
+import { tradingDay } from '../lib/tradingDay'
 export default function DailyJournal({ data, onChange, status }: { data: JournalData; onChange: (date: string, text: string) => void; status: string }) {
   const [date, setDate] = useState(today), [remove, setRemove] = useState(false)
   const entry = data.journals[date], text = entry?.text || ''
   const dates = Object.keys(data.journals).filter(d => data.journals[d].text.trim()).sort().reverse()
-  const dayTrades = data.trades.filter(t => t.values.date === date && isComplete(t, data.fields)), stats = metrics(pnlTrades(dayTrades, 'dollars', data))
+  const dayTrades = data.trades.filter(t => tradingDay(t, data.tradingDayEnd) === date && isComplete(t, data.fields)), stats = metrics(pnlTrades(dayTrades, 'dollars', data))
   const move = (amount: number) => { const d = new Date(`${date}T12:00:00`); d.setDate(d.getDate() + amount); setDate(`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`) }
   return <>
     <div className="page-heading"><div><div className="eyebrow">MAKE SPACE TO REFLECT</div><h1>Daily journal<span className="heading-dot">.</span></h1><p>The thoughts behind the numbers. A page for every day.</p></div><span className="tag"><BookOpen size={14} />{dates.length} entries</span></div>

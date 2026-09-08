@@ -24,6 +24,10 @@ export default function App() {
   const notify = useCallback((message: string) => setToast(message), [])
   useEffect(() => { let active = true; loadData().then(value => { if (active) { dataRef.current = value; setData(value) } }).catch(e => { if (active) setLoadError(e instanceof Error ? e.message : 'Could not load your data.') }); return () => { active = false } }, [])
   useEffect(() => { if (data) document.documentElement.dataset.theme = data.theme }, [data])
+  const pinned = !!data?.alwaysOnTop
+  useEffect(() => {
+    void window.journalAPI?.setAlwaysOnTop?.(pinned).catch(() => notify('The window could not be pinned. Toggle Pin on top to try again.'))
+  }, [pinned, notify])
   const minimalist = !!data?.minimalist
   useEffect(() => {
     if (minimalist) setPage('entry')
@@ -65,7 +69,7 @@ export default function App() {
   if (loadError) return <div className="boot-screen"><TurboIcon size={40} /><h1>Your data couldn’t be opened.</h1><p>{loadError}</p><p>Existing storage has been left untouched.</p><button className="primary" onClick={() => location.reload()}>Try again</button></div>
   if (!data) return <div className="boot-screen"><TurboIcon size={40} /><h1>Starting Turbo Journal…</h1></div>
   const drafts = data.trades.filter(t => !isComplete(t, data.fields)).length
-  const appearance = <AppearanceControls theme={data.theme} minimalist={minimalist}
+  const appearance = <AppearanceControls theme={data.theme} minimalist={minimalist} pinned={pinned} canPin={!!window.journalAPI?.setAlwaysOnTop} onPin={() => { void update(current => ({ ...current, alwaysOnTop: !current.alwaysOnTop })) }}
     onTheme={() => { void update(current => ({ ...current, theme: current.theme === 'dark' ? 'light' : 'dark' })) }}
     onMinimalist={() => { setPage('entry'); void update(current => ({ ...current, minimalist: !current.minimalist })) }} />
   return <div className={`app-shell ${minimalist ? 'minimalist' : ''}`}><aside className="sidebar"><button className="brand" onClick={() => navigate('dashboard')} aria-label="Turbo Journal home"><span className="brand-mark"><TurboIcon size={29} /></span><span><strong>TURBO<span>↗</span></strong><small>TRADING JOURNAL</small></span></button><div className="sidebar-caption">YOUR TRADING WORKSPACE</div><nav aria-label="Main navigation">{pages.map(({ id, name, icon: Icon }) => <button key={id} className={`nav-link ${page === id ? 'active' : ''}`} aria-current={page === id ? 'page' : undefined} onClick={() => navigate(id)}><Icon size={19} /><span>{name}</span>{id === 'entry' && drafts > 0 && <b>{drafts}</b>}</button>)}</nav><div className="sidebar-bottom"><div className="sidebar-note"><span className="eyebrow">LESS GUESSWORK.</span><strong>More perspective.</strong><p>Your process is your edge.<br />Make every trade count.</p><ArrowUpRight size={27} /></div>{appearance}<div className="local-label"><span className="status-dot" />{storageMode()}</div></div></aside>

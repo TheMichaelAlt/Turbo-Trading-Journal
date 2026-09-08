@@ -44,7 +44,7 @@ test('chronological drawdown, overnight holding time and daily totals are accura
   const trades = [trade(-60, 2), trade(100, 0, { timeIn: '23:50', timeOut: '00:10', date: '2026-08-31' }), trade(-70, 1)]
   assert.equal(metrics(trades).maxDrawdown, 130)
   assert.equal(metrics([trades[1]]).avgDuration, 20)
-  assert.deepEqual(dailyResults(trades), [{ date: '2026-08-31', value: 100 }, { date: '2026-09-01', value: -130 }])
+  assert.deepEqual(dailyResults(trades), [{ date: '2026-09-01', value: -30 }])
 })
 test('case variants share one analytics row and match the same filters even before storage normalization', () => {
   const trades = [trade(140, 0, { contract: 'mnq', strategy: 'orb' }), trade(289, 1, { contract: 'MNQ', strategy: 'ORB' }), trade(289, 2, { contract: ' Mnq ', strategy: 'Orb' })]

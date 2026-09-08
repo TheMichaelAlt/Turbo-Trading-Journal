@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Columns3, Download, Pencil, Search, Trash2 } from 'lucide-react'
 import { historicalFields, isComplete, isBlank, type JournalData, type Trade } from '../lib/model'
-import { chronological, emptyFilters, filterTrades } from '../lib/analytics'
+import { compareChronology, chronological, emptyFilters, filterTrades } from '../lib/analytics'
 import { csvCell, downloadFile } from '../lib/storage'
 import { Empty, FilterBar, Modal } from './ui'
 import { pnlUnit } from '../lib/pnl'
@@ -19,7 +19,7 @@ export default function TradeTable({ data, onEdit, onDelete, onNew, update }: { 
   const filtered = filterTrades(completed, filters).filter(t => fields.some(f => String(t.values[f.id] ?? '').toLowerCase().includes(search.toLowerCase())))
   const trades = chronological(filtered).sort((a, b) => {
     const av = a.values[sort.id] ?? '', bv = b.values[sort.id] ?? ''
-    const delta = typeof av === 'number' && typeof bv === 'number' ? av - bv : String(av).localeCompare(String(bv), undefined, { numeric: true })
+    const delta = sort.id === 'date' ? compareChronology(a, b) : typeof av === 'number' && typeof bv === 'number' ? av - bv : String(av).localeCompare(String(bv), undefined, { numeric: true })
     return sort.desc ? -delta : delta
   })
   const selectedColumns = columns ?? fields.filter(f => !f.archived).map(f => f.id)

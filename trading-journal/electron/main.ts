@@ -71,6 +71,11 @@ else {
       const error = await shell.openPath(dataDirectory)
       if (error) throw new Error(error)
     })
+    ipcMain.handle('window:always-on-top', (event, enabled: unknown) => {
+      trusted(event)
+      if (typeof enabled !== 'boolean') throw new Error('Invalid pin mode')
+      win?.setAlwaysOnTop(enabled)
+    })
     ipcMain.handle('window:minimalist', (event, enabled: unknown) => {
       trusted(event)
       if (typeof enabled !== 'boolean') throw new Error('Invalid window mode')

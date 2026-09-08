@@ -14,7 +14,8 @@ export interface JournalData {
   accounts?: PropAccount[];
   lastFilters?: LastFilters;
   version: 1; fields: Field[]; trades: Trade[]; journals: Record<string, JournalEntry>
-  theme: 'dark' | 'light'; currency: string; minimalist?: boolean; pnlDisplay?: PnlDisplay; contractMultipliers?: Record<string, number>
+  tradingDayEnd?: string;
+  theme: 'dark' | 'light'; currency: string; minimalist?: boolean; alwaysOnTop?: boolean; pnlDisplay?: PnlDisplay; contractMultipliers?: Record<string, number>
 }
 export const numericTypes: FieldType[] = ['decimal', 'integer', 'percent', 'score']
 export const isNumeric = (field: Field) => numericTypes.includes(field.type)
@@ -169,8 +170,10 @@ export function parseBackup(input: unknown): JournalData {
   }
   if (!['dark', 'light'].includes(d.theme) || !['USD', 'EUR', 'GBP', 'CAD', 'AUD', 'JPY'].includes(d.currency)) throw new Error('Backup contains invalid display settings.')
   if (d.minimalist !== undefined && typeof d.minimalist !== 'boolean') throw new Error('Backup contains an invalid layout setting.')
+  if (d.tradingDayEnd !== undefined && (typeof d.tradingDayEnd !== 'string' || !/^([01]\d|2[0-3]):[0-5]\d$/.test(d.tradingDayEnd))) throw new Error('Invalid trading day end time.');
   if (d.pnlDisplay !== undefined && !['dollars', 'points', 'both'].includes(d.pnlDisplay)) throw new Error('Invalid PnL display setting.')
   if (d.contractMultipliers !== undefined && (!d.contractMultipliers || typeof d.contractMultipliers !== 'object' || Array.isArray(d.contractMultipliers) || Object.entries(d.contractMultipliers).some(([key, value]) => !key.trim() || key !== key.trim().toUpperCase() || ['__PROTO__', 'CONSTRUCTOR', 'PROTOTYPE'].includes(key) || typeof value !== 'number' || !Number.isFinite(value) || value <= 0))) throw new Error('Invalid contract multipliers.')
+  if (d.alwaysOnTop !== undefined && typeof d.alwaysOnTop !== 'boolean') throw new Error('Backup contains an invalid pin setting.')
   validateAccounts(d.accounts)
   validateLastFilters(d.lastFilters)
   return normalizeCharacteristics(d)

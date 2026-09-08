@@ -7,16 +7,18 @@ import { money, number } from '../lib/format'
 import { Modal } from './ui'
 import './PerformanceCalendar.css'
 
+import { DEFAULT_TRADING_DAY_END, tradingDay } from '../lib/tradingDay'
+
 const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 const longDate = (date: string) => new Date(`${date}T12:00:00Z`).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' })
 
-export default function PerformanceCalendar({ trades, currency, focusMonth }: { trades: Trade[]; currency: string; focusMonth?: string }) {
+export default function PerformanceCalendar({ trades, currency, focusMonth, tradingDayEnd = DEFAULT_TRADING_DAY_END }: { trades: Trade[]; currency: string; focusMonth?: string; tradingDayEnd?: string }) {
   const titleId = useId()
   const [month, setMonth] = useState(focusMonth || today().slice(0, 7))
   const [selected, setSelected] = useState<string | null>(null)
   useEffect(() => { if (focusMonth && validMonth(focusMonth)) setMonth(focusMonth) }, [focusMonth])
-  const days = useMemo(() => dailyStats(trades), [trades])
-  const monthTrades = trades.filter(t => String(t.values.date || '').startsWith(month))
+  const days = useMemo(() => dailyStats(trades, tradingDayEnd), [trades, tradingDayEnd])
+  const monthTrades = trades.filter(t => tradingDay(t, tradingDayEnd).startsWith(month))
   const summary = metrics(monthTrades)
   const detail = selected ? days.get(selected) : undefined
   const winRate = (stats: ReturnType<typeof metrics>) => stats.count ? `${number(stats.winRate, 1)}%` : '—'
@@ -24,7 +26,7 @@ export default function PerformanceCalendar({ trades, currency, focusMonth }: { 
 
   return <section className="panel performance-calendar" aria-labelledby={titleId}>
     <div className="panel-heading calendar-heading">
-      <div><h2 id={titleId}><CalendarDays size={18} />Trading calendar</h2><p>Daily stats from your filtered, completed trades. Select a trading day for details.</p></div>
+      <div><h2 id={titleId}><CalendarDays size={18} />Trading calendar</h2><p>Daily stats from your filtered, completed trades. Entries after {tradingDayEnd} count toward the next day. Select a trading day for details.</p></div>
       <div className="calendar-controls">
         <button className="icon-button" aria-label="Previous month" disabled={month === '0001-01'} onClick={() => setMonth(shiftMonth(month, -1))}><ChevronLeft size={17} /></button>
         <input aria-label="Calendar month" type="month" min="0001-01" max="9999-12" value={month} onChange={e => { if (validMonth(e.target.value)) setMonth(e.target.value) }} />

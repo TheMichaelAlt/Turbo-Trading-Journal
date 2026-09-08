@@ -1,4 +1,5 @@
 import { canonicalText, isBlank, validDate, type Trade } from './model.ts'
+import { tradingDay } from './tradingDay.ts'
 import { metrics } from './analytics.ts'
 
 export const validMonth = (month: string) => /^\d{4}-(0[1-9]|1[0-2])$/.test(month) && Number(month.slice(0, 4)) > 0
@@ -25,10 +26,10 @@ export function calendarCells(month: string) {
   })
 }
 
-export function dailyStats(trades: Trade[]) {
+export function dailyStats(trades: Trade[], tradingDayEnd?: string) {
   const groups = new Map<string, Trade[]>()
   for (const trade of trades) {
-    const date = String(trade.values.date ?? '')
+    const date = tradingDay(trade, tradingDayEnd)
     if (!validDate(date)) continue
     groups.set(date, [...(groups.get(date) || []), trade])
   }

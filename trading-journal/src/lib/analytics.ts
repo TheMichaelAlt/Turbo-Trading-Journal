@@ -1,11 +1,13 @@
 import { type Field, type Trade, isBlank, isNumeric, canonicalText, characteristicValue } from './model.ts'
+import { tradingDay } from './tradingDay.ts'
 export interface Filter { field: string; value?: string; min?: string; max?: string; missing?: boolean }
 export interface Filters { from: string; to: string; rules: Filter[] }
 export const emptyFilters = (): Filters => ({ from: '', to: '', rules: [] })
-export const chronological = (trades: Trade[]) => [...trades].sort((a, b) => `${a.values.date ?? ''} ${a.values.timeIn ?? ''} ${a.createdAt} ${a.id}`.localeCompare(`${b.values.date ?? ''} ${b.values.timeIn ?? ''} ${b.createdAt} ${b.id}`))
-export function filterTrades(trades: Trade[], filters: Filters): Trade[] {
+export const compareChronology = (a: Trade, b: Trade) => `${a.values.date ?? ''} ${a.values.timeIn ?? ''} ${a.createdAt} ${a.id}`.localeCompare(`${b.values.date ?? ''} ${b.values.timeIn ?? ''} ${b.createdAt} ${b.id}`)
+export const chronological = (trades: Trade[]) => [...trades].sort(compareChronology)
+export function filterTrades(trades: Trade[], filters: Filters, tradingDayEnd?: string): Trade[] {
   return trades.filter(t => {
-    const date = String(t.values.date ?? '')
+    const date = tradingDayEnd === undefined ? String(t.values.date ?? '') : tradingDay(t, tradingDayEnd)
     if ((filters.from && (!date || date < filters.from)) || (filters.to && (!date || date > filters.to))) return false
     return filters.rules.every(f => {
       const value = t.values[f.field]
@@ -87,8 +89,8 @@ export function groupTrades(trades: Trade[], fields: Field[]) {
     return 0
   }).map(g => ({ ...g, stats: metrics(g.trades) }))
 }
-export function dailyResults(trades: Trade[]) {
+export function dailyResults(trades: Trade[], tradingDayEnd?: string) {
   const days = new Map<string, number>()
-  chronological(trades.filter(hasPnl)).forEach(t => { const date = String(t.values.date || 'Undated'); days.set(date, (days.get(date) || 0) + Number(t.values.pnl)) })
-  return [...days].map(([date, value]) => ({ date, value }))
+  chronological(trades.filter(hasPnl)).forEach(t => { const date = tradingDay(t, tradingDayEnd) || 'Undated'; days.set(date, (days.get(date) || 0) + Number(t.values.pnl)) })
+  return [...days].sort(([a], [b]) => a.localeCompare(b)).map(([date, value]) => ({ date, value }))
 }

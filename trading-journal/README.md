@@ -4,7 +4,7 @@ A local trading workspace with customizable trade characteristics, automatic com
 
 ## Run locally
 
-For a ready-to-install Windows app, use the Setup.exe in `release/1.3.0/`.
+For a ready-to-install Windows app, use the Setup.exe in `release/1.3.2/`.
 Your friend needs only that file. It includes the runtime and starts an empty
 journal on their PC. See `INSTALL-AND-UPDATE.txt` beside the installer and
 [RELEASING.md](RELEASING.md) for future releases. Upgrades use a newer installer
@@ -140,3 +140,11 @@ Payouts keep the full **trading balance deduction** separate from **actual cash 
 The page supports an as-of date, a chronological ledger with running balances, and CSV ledger export. Managed accounts and actions are part of normal SQLite/browser storage and JSON backups and survive upgrades. The dashboard's account overview summarizes all managed accounts through today independently of trade filters. Starting balance affects account equity, not profit factor (gross profit / gross loss).
 
 Drawdown estimates support **static**, **EOD trailing**, and **live trailing**. Static starts from the current reset/funding cycle's baseline. EOD uses prior calendar-day closing balances; today's closing threshold remains provisional. Live uses logged closing-balance highs plus manually recorded observed equity highs. Neither live unrealized PnL nor firm-specific session boundaries/capped trailing rules are inferred. DLL uses selected-calendar-day net closed-trade losses. These estimates should be compared with the firm's reported limits; they are not live breach monitoring.
+
+## Pin on top
+
+Use the pin icon beside **Minimalist** to keep the desktop journal above other windows. Click it again to unpin. It works in full and minimalist mode, remembers the setting across restarts, and does not move or resize the window. Pinning is available in the desktop app; browsers cannot pin their native window from a page.
+
+### Trading days
+
+Settings > Trading day sets the end time (default 15:00). Entries strictly after the cutoff count toward the next date, including weekends. The dashboard calendar, daily PnL chart, dashboard date range, and daily journal trade summary use this rule, including for existing trades. Written journal pages and original trade dates/times are unchanged. The master log retains calendar date filters and defaults to descending date, then descending entry time.
