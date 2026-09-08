@@ -7,6 +7,7 @@ import { Empty, FilterBar, StatCards } from './ui'
 import { money, number } from '../lib/format'
 import { DailyChart, EquityChart } from './Charts'
 import { pnlTrades, type PnlDisplay } from '../lib/pnl'
+import AccountBalanceSummary from './AccountBalanceSummary'
 import PerformanceCalendar from './PerformanceCalendar'
 function BreakdownTable({ trades, fields, currency, exportable = false }: { trades: Trade[]; fields: Field[]; currency: string; exportable?: boolean }) {
   const groups = groupTrades(trades, fields)
@@ -23,6 +24,7 @@ export default function Dashboard({ data, onNew, onDemo, update }: { data: Journ
   return <>
     <div className="page-heading"><div><div className="eyebrow">THE BIG PICTURE</div><h1>Performance overview<span className="heading-dot">.</span></h1><p>Find your edge. One trade, one pattern at a time.</p></div><button className="primary" onClick={onNew}>Log a trade <ArrowUpRight size={17} /></button></div>
     <div className="pnl-display-controls"><label>Dashboard PnL display<select aria-label="Dashboard PnL display" value={display} onChange={e => { const pnlDisplay = e.target.value as PnlDisplay; void update(current => ({ ...current, pnlDisplay })) }}><option value="dollars">Dollars</option><option value="points">Points</option><option value="both">Both</option></select></label><p>Points are summed across contracts, including partial exits. Different markets have different point values; filter by contract for comparable results.</p></div>
+    <AccountBalanceSummary data={data} />
     {(display === 'both' ? ['dollars', 'points'] as const : [display]).map(unit => <section key={unit} aria-label={`${unit === 'points' ? 'Points' : 'Dollars'} analytics`}><h2 className="pnl-unit-heading">{unit === 'points' ? 'Points' : `Dollars (${data.currency})`}</h2><DashboardView data={data} onNew={onNew} onDemo={onDemo} unit={unit} filters={filters} setFilters={setFilters} /></section>)}
   </>
 }

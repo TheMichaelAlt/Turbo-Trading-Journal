@@ -1,3 +1,4 @@
+import { validateAccounts, type PropAccount } from './accounts.ts'
 import { validateLastFilters, type LastFilters } from './lastFilters.ts'
 import { calculatedValues, type PnlDisplay } from './pnl.ts'
 export type FieldType = 'text' | 'decimal' | 'integer' | 'percent' | 'score' | 'date' | 'time'
@@ -10,6 +11,7 @@ export interface Field {
 export interface Trade { id: string; values: Values; createdAt: string; updatedAt: string; demo?: boolean }
 export interface JournalEntry { text: string; updatedAt: string }
 export interface JournalData {
+  accounts?: PropAccount[];
   lastFilters?: LastFilters;
   version: 1; fields: Field[]; trades: Trade[]; journals: Record<string, JournalEntry>
   theme: 'dark' | 'light'; currency: string; minimalist?: boolean; pnlDisplay?: PnlDisplay; contractMultipliers?: Record<string, number>
@@ -116,7 +118,11 @@ export function learnOptions(fields: Field[], values: Values): Field[] {
 // IDs, numbers, timestamps, notes, and daily journal writing are left intact.
 export function normalizeCharacteristics(data: JournalData): JournalData {
   const added = defaultFields().filter(f => ['pnlUnit', 'tradeRR', 'realizedRR'].includes(f.id) && !data.fields.some(old => old.id === f.id)).map(f => ({ ...f, name: data.fields.some(old => old.name.toLowerCase() === f.name.toLowerCase()) ? f.name + ' (automatic)' : f.name }))
-  const fields = [...data.fields, ...added].map(normalizeField)
+  const fields = [...data.fields, ...added].map(normalizeField).map(f => {
+    if (f.id !== 'account' || !data.accounts?.length) return f
+    const options = [...new Set([...f.options, ...data.accounts.map(a => canonicalText(a.name))])]
+    return options.length === f.options.length ? f : { ...f, options }
+  })
   const textFields = fields.filter(isTextCharacteristic)
   const trades = data.trades.map(trade => {
     const changes = textFields.flatMap(f => {
@@ -165,6 +171,7 @@ export function parseBackup(input: unknown): JournalData {
   if (d.minimalist !== undefined && typeof d.minimalist !== 'boolean') throw new Error('Backup contains an invalid layout setting.')
   if (d.pnlDisplay !== undefined && !['dollars', 'points', 'both'].includes(d.pnlDisplay)) throw new Error('Invalid PnL display setting.')
   if (d.contractMultipliers !== undefined && (!d.contractMultipliers || typeof d.contractMultipliers !== 'object' || Array.isArray(d.contractMultipliers) || Object.entries(d.contractMultipliers).some(([key, value]) => !key.trim() || key !== key.trim().toUpperCase() || ['__PROTO__', 'CONSTRUCTOR', 'PROTOTYPE'].includes(key) || typeof value !== 'number' || !Number.isFinite(value) || value <= 0))) throw new Error('Invalid contract multipliers.')
+  validateAccounts(d.accounts)
   validateLastFilters(d.lastFilters)
   return normalizeCharacteristics(d)
 }

@@ -4,7 +4,7 @@ A local trading workspace with customizable trade characteristics, automatic com
 
 ## Run locally
 
-For a ready-to-install Windows app, use the Setup.exe in `release/1.2.3/`.
+For a ready-to-install Windows app, use the Setup.exe in `release/1.3.0/`.
 Your friend needs only that file. It includes the runtime and starts an empty
 journal on their PC. See `INSTALL-AND-UPDATE.txt` beside the installer and
 [RELEASING.md](RELEASING.md) for future releases. Upgrades use a newer installer
@@ -128,3 +128,15 @@ Dark mode retains the midnight blue-teal background with teal and orange panel o
 ## Remembered filters
 
 Dashboard and master trade log filters automatically stay at their last-used settings, independently for each page. Date ranges, characteristic rules, and master-log search text are saved locally with the journal and included in backups. They survive page changes, app restarts, and updates. Reset filters clears the remembered rules and dates for that page; clear the search box separately. There are no presets or profiles to manage. Date ranges remain the exact dates you selected.
+
+## Prop account manager
+
+**Account manager** links profiles to trade-log account names, ignoring case. Choose an existing name to enter its firm, starting balance/date, initial eval/funded stage, maximum drawdown, DLL and default payout share. Add a new account here to make its name available in trade entry. The opening balance applies immediately before trades at the selected local date/time; older trades stay in the journal but are not added again.
+
+Record dated account purchases, subscriptions/fees, resets, funding/activation, payouts, balance reconciliations, observed live equity highs and closures. Edit or delete actions to correct the ledger. Reset and funding actions can establish a new trading balance and drawdown baseline while preserving all previous costs and trades. Same-time actions retain their recorded order and precede same-time trade closes.
+
+Payouts keep the full **trading balance deduction** separate from **actual cash received**: a 1,000 deduction at 80% reduces the account by 1,000 and records 800 real cash received. Override cash received to match the deposit; avoid counting a withheld fee twice. Real costs never silently reduce trading PnL. Net real cash = actual payouts minus purchase, reset, activation and other cash costs. Trade PnL uses the configured dollar/point multiplier and only completed, dated trades with a usable conversion. Unfinished or unconvertible records are called out.
+
+The page supports an as-of date, a chronological ledger with running balances, and CSV ledger export. Managed accounts and actions are part of normal SQLite/browser storage and JSON backups and survive upgrades. The dashboard's account overview summarizes all managed accounts through today independently of trade filters. Starting balance affects account equity, not profit factor (gross profit / gross loss).
+
+Drawdown estimates support **static**, **EOD trailing**, and **live trailing**. Static starts from the current reset/funding cycle's baseline. EOD uses prior calendar-day closing balances; today's closing threshold remains provisional. Live uses logged closing-balance highs plus manually recorded observed equity highs. Neither live unrealized PnL nor firm-specific session boundaries/capped trailing rules are inferred. DLL uses selected-calendar-day net closed-trade losses. These estimates should be compared with the firm's reported limits; they are not live breach monitoring.
