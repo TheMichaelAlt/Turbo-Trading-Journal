@@ -4,6 +4,7 @@ import { activeFields, isCalculated, fieldError, isBlank, isComplete, isNumeric,
 import { Empty, Modal } from './ui'
 import { calculatedValues, pnlUnit } from '../lib/pnl'
 import { money, number } from '../lib/format'
+import RestoreTyping from './RestoreTyping'
 import TurboIcon from './TurboIcon'
 export function FieldInput({ field, value, onChange, error, compact = false }: { compact?: boolean; field: Field; value: string | number | undefined; onChange: (value: string) => void; error?: string }) {
   const id = `field-${field.id}`
@@ -61,7 +62,7 @@ export default function TradeEntry({ data, editing, onEdit, onSave, onDelete, on
         <button type="button" className="secondary" onClick={onCancel} title="Start a new trade"><Plus size={13} />New</button>
         {editing && <button type="button" className="icon-button danger" aria-label="Delete current trade" onClick={() => setDeleting(editing)}><Trash2 size={14} /></button>}
         <span className="quick-status" role="status"><CheckCircle2 size={12} />{status === 'saving' ? 'Saving…' : status === 'error' ? 'Unsaved changes' : 'Saved locally'}</span>
-        {appearance}
+        <RestoreTyping />{appearance}
       </div>
       <div className="quick-entry-body">
         <div className="quick-fields" ref={scrollRow} role="region" aria-label="Trade characteristics" tabIndex={0}>
@@ -73,7 +74,7 @@ export default function TradeEntry({ data, editing, onEdit, onSave, onDelete, on
     </form> : <>
     <div className="page-heading"><div><div className="eyebrow">CAPTURE THE DETAILS</div><h1>Trade log<span className="heading-dot">.</span></h1><p>Record the trade. Reflect on the process.</p></div><span className="tag yellow"><Clock3 size={14} />{drafts.length} unfinished</span></div>
     <div className="entry-layout"><form className="panel entry-form" noValidate onSubmit={save}>
-      <div className="panel-heading"><div><h2>{editing ? 'Edit trade' : 'New trade'}</h2><p>Required fields are marked with <span className="required">*</span>. You can save an unfinished entry anytime.</p></div>{editing && <button type="button" className="text-button" onClick={onCancel}>Cancel edit</button>}</div>
+      <div className="panel-heading"><div><h2>{editing ? 'Edit trade' : 'New trade'}</h2><RestoreTyping /><p>Required fields are marked with <span className="required">*</span>. You can save an unfinished entry anytime.</p></div>{editing && <button type="button" className="text-button" onClick={onCancel}>Cancel edit</button>}</div>
       <div className="completion-strip"><span className={issues.length === 0 ? 'positive' : ''}>{issues.length === 0 ? <CheckCircle2 size={16} /> : <Clock3 size={16} />}{filled} / {required.length} required fields</span><div className="progress-track"><i style={{ width: `${required.length ? filled / required.length * 100 : 100}%` }} /></div><span>{issues.length === 0 ? 'Ready for master log' : 'Unfinished entry'}</span></div>
       <div className="form-section"><h3>Trade essentials</h3><div className="form-grid">{essentials.map(f => <FieldInput key={f.id} field={f} value={displayedValues[f.id]} onChange={v => change(f.id, v)} error={errors[f.id]} />)}</div></div>
       {!!optional.length && <div className="form-section"><div className="section-line"><h3>The context behind the trade</h3><span className="tag">Optional</span></div><div className="form-grid">{optional.map(f => <FieldInput key={f.id} field={f} value={displayedValues[f.id]} onChange={v => change(f.id, v)} error={errors[f.id]} />)}</div></div>}

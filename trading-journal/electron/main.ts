@@ -1,5 +1,5 @@
 import { app, BrowserWindow, ipcMain, screen, shell, type IpcMainInvokeEvent, type Rectangle } from 'electron'
-import { mkdirSync } from 'node:fs'
+import { appendFileSync, existsSync, statSync, writeFileSync, mkdirSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import { JournalStore } from './store'
@@ -70,6 +70,21 @@ else {
       trusted(event)
       const error = await shell.openPath(dataDirectory)
       if (error) throw new Error(error)
+    })
+    ipcMain.handle('window:restore-typing', event => {
+      trusted(event)
+      const snapshot = () => ({ windowFocused: win!.isFocused(), contentFocused: win!.webContents.isFocused(), minimized: win!.isMinimized(), pinned: win!.isAlwaysOnTop(), minimalist })
+      const before = snapshot()
+      win!.blur()
+      win!.focus()
+      win!.webContents.focus()
+      const report = { at: new Date().toISOString(), version: app.getVersion(), electron: process.versions.electron, before, after: snapshot() }
+      const file = path.join(dataDirectory, 'input-focus-diagnostics.jsonl')
+      try {
+        if (existsSync(file) && statSync(file).size > 256 * 1024) writeFileSync(file, '')
+        appendFileSync(file, JSON.stringify(report) + '\n')
+        return { logged: true }
+      } catch { return { logged: false } }
     })
     ipcMain.handle('window:always-on-top', (event, enabled: unknown) => {
       trusted(event)

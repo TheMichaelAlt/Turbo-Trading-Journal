@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Activity, ArrowUpRight, BookOpen, CheckCircle2, Database, LayoutDashboard, Plus, Settings, Upload, Wallet } from 'lucide-react'
+import { Modal } from './components/ui'
 import Dashboard from './components/Dashboard'
 import TurboIcon from './components/TurboIcon'
 import TradeEntry from './components/TradeEntry'
@@ -50,11 +51,12 @@ export default function App() {
     queue.current = task.then(() => undefined)
     return task
   }, [])
+  const [leaveAction, setLeaveAction] = useState<(() => void) | null>(null)
+  const requestLeave = (action: () => void) => { if (dirty.current) setLeaveAction(() => action); else action() }
   const onDirty = useCallback((value: boolean) => { dirty.current = value }, [])
-  const canLeave = () => !dirty.current || window.confirm('Discard the unsaved changes on this page?')
-  const navigate = (next: Page) => { if (next === page) return; if (!canLeave()) return; dirty.current = false; setPage(next); setEditing(undefined) }
-  const newTrade = () => { if (!canLeave()) return; dirty.current = false; setEditing(undefined); setFormKey(k => k + 1); setPage('entry') }
-  const editTrade = (trade: Trade) => { if (!canLeave()) return; dirty.current = false; setEditing(trade); setFormKey(k => k + 1); setPage('entry') }
+  const navigate = (next: Page) => { if (next === page) return; requestLeave(() => { dirty.current = false; setPage(next); setEditing(undefined) }) }
+  const newTrade = () => requestLeave(() => { dirty.current = false; setEditing(undefined); setFormKey(k => k + 1); setPage('entry') })
+  const editTrade = (trade: Trade) => requestLeave(() => { dirty.current = false; setEditing(trade); setFormKey(k => k + 1); setPage('entry') })
   const saveTrade = async (raw: Values, id?: string) => {
     const current = dataRef.current!
     const existing = current.trades.find(t => t.id === id)
@@ -84,5 +86,6 @@ export default function App() {
       {page === 'settings' && <Preferences data={data} update={update} onDemo={() => { void demo() }} notify={notify} />}
       <footer className="app-footer"><span>TURBO JOURNAL</span><span>Reflect. Refine. Repeat.</span><span>LOCAL FIRST · V{APP_VERSION}</span></footer>
     </main></div>{toast && <div className="toast" role="status"><CheckCircle2 size={18} />{toast}<button aria-label="Dismiss notification" onClick={() => setToast('')}>×</button></div>}
+    {leaveAction && <Modal title="Discard unsaved changes?" onClose={() => setLeaveAction(null)}><p>Your unsaved changes on this page will be discarded.</p><div className="modal-actions"><button className="secondary" autoFocus onClick={() => setLeaveAction(null)}>Keep editing</button><button className="danger-button" onClick={() => { const action = leaveAction; setLeaveAction(null); action() }}>Discard changes</button></div></Modal>}
   </div>
 }

@@ -4,7 +4,7 @@ A local trading workspace with customizable trade characteristics, automatic com
 
 ## Run locally
 
-For a ready-to-install Windows app, use the Setup.exe in `release/1.3.2/`.
+For a ready-to-install Windows app, use the Setup.exe in `release/1.3.3/`.
 Your friend needs only that file. It includes the runtime and starts an empty
 journal on their PC. See `INSTALL-AND-UPDATE.txt` beside the installer and
 [RELEASING.md](RELEASING.md) for future releases. Upgrades use a newer installer
@@ -148,3 +148,7 @@ Use the pin icon beside **Minimalist** to keep the desktop journal above other w
 ### Trading days
 
 Settings > Trading day sets the end time (default 15:00). Entries strictly after the cutoff count toward the next date, including weekends. The dashboard calendar, daily PnL chart, dashboard date range, and daily journal trade summary use this rule, including for existing trades. Written journal pages and original trade dates/times are unchanged. The master log retains calendar date filters and defaults to descending date, then descending entry time.
+
+### Typing recovery
+
+Unsaved navigation uses an in-app confirmation to avoid native confirmation focus issues on Windows. If typing stops responding, use Restore typing on the trade log (also available in minimalist mode); it refocuses the desktop without reloading or clearing the form. Each use writes window focus state and app/runtime versions to `%APPDATA%/trading-journal/input-focus-diagnostics.jsonl`, capped at approximately 256 KB. No field contents or keystrokes are logged. This is a mitigation for intermittent focus loss, not a guarantee against every possible input issue.
